@@ -1,0 +1,15 @@
+{
+    "$schema": "https://app.cursor.sh/cursor.schema.json",
+    "agents": [
+      {
+        "name": "default",
+        "rules": "./AGENTS.md",
+        "context": [
+          "src/",
+          "test-vite-react/",
+          "PRD.md"
+        ]
+      }
+    ]
+  }
+  
