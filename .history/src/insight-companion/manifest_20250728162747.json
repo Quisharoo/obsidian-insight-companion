@@ -1,0 +1,12 @@
+{
+  "id": "insight-companion",
+  "name": "Insight Companion",
+  "version": "1.0.0",
+  "minAppVersion": "1.0.0",
+  "description": "Automatically generate insightful summaries from collections of your vault notes using OpenAI's language models.",
+  "author": "Insight Companion Team",
+  "authorUrl": "",
+  "fundingUrl": "",
+  "isDesktopOnly": false,
+  "main": "main.js"
+} 

@@ -2,7 +2,6 @@ import { Plugin, PluginSettingTab, App, Setting } from 'obsidian';
 import { DatePickerModal, DateRange } from './date-picker-modal';
 import { NoteFilterService, NoteFilterResult } from './note-filter';
 import { TokenEstimator, TokenEstimate } from './token-estimator';
-import { ConfirmationModal, ConfirmationData } from './confirmation-modal';
 
 interface InsightCompanionSettings {
 	lastDateRange: DateRange | null;
@@ -62,65 +61,9 @@ export default class InsightCompanionPlugin extends Plugin {
 		this.settings.lastDateRange = dateRange;
 		await this.saveSettings();
 		
-		try {
-			// Filter notes by date range
-			console.log('Filtering notes by date range...');
-			const filterResult: NoteFilterResult = await this.noteFilterService.filterNotesByDateRange(dateRange);
-			
-			if (filterResult.totalCount === 0) {
-				console.log('No notes found in the selected date range');
-				// TODO: Show user notification about no notes found
-				return;
-			}
-
-			// Estimate token count
-			console.log('Estimating token count...');
-			const tokenEstimate: TokenEstimate = TokenEstimator.estimateTokens(filterResult.notes);
-			
-			// Check token limits and provide recommendations
-			const limitCheck = TokenEstimator.checkTokenLimits(tokenEstimate.totalTokens);
-			
-			// Estimate cost
-			const costEstimate = TokenEstimator.estimateCost(tokenEstimate.totalTokens);
-
-			// Show confirmation dialog with note count and token estimate
-			const confirmationData: ConfirmationData = {
-				filterResult,
-				tokenEstimate,
-				costEstimate,
-				limitCheck
-			};
-
-			const confirmationModal = new ConfirmationModal(
-				this.app,
-				confirmationData,
-				() => {
-					// User confirmed - proceed with summary generation
-					console.log('User confirmed summary generation');
-					this.proceedWithSummaryGeneration(filterResult, tokenEstimate);
-				},
-				() => {
-					// User cancelled
-					console.log('User cancelled summary generation');
-				}
-			);
-
-			confirmationModal.open();
-
-		} catch (error) {
-			console.error('Error processing date selection:', error);
-			// TODO: Show user-friendly error notification
-		}
-	}
-
-	private async proceedWithSummaryGeneration(filterResult: NoteFilterResult, tokenEstimate: TokenEstimate) {
-		console.log('Proceeding with summary generation...');
-		console.log(`Processing ${filterResult.totalCount} notes with ${tokenEstimate.totalTokens} estimated tokens`);
-		
-		// TODO: Implement actual LLM API call and summary generation
-		// For now, just log that we would proceed
-		console.log('This is where the LLM API call would happen');
-		console.log('Summary would be generated and saved to:', this.settings.outputFolder);
+		// TODO: Implement note filtering and summarization
+		// For now, just log the selection
+		console.log(`Will generate summary for notes between ${dateRange.startDate} and ${dateRange.endDate}`);
 	}
 
 	async loadSettings() {

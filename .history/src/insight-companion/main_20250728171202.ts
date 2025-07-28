@@ -77,50 +77,32 @@ export default class InsightCompanionPlugin extends Plugin {
 			console.log('Estimating token count...');
 			const tokenEstimate: TokenEstimate = TokenEstimator.estimateTokens(filterResult.notes);
 			
+			// Log the results for now (will be replaced with confirmation dialog)
+			console.log(`Found ${filterResult.totalCount} notes in date range`);
+			console.log(TokenEstimator.formatEstimate(tokenEstimate));
+			
 			// Check token limits and provide recommendations
 			const limitCheck = TokenEstimator.checkTokenLimits(tokenEstimate.totalTokens);
-			
+			if (!limitCheck.withinGPT4TurboLimit) {
+				console.warn('Token count exceeds GPT-4 Turbo limits');
+				console.log('Recommendations:', limitCheck.recommendations);
+			} else if (!limitCheck.withinGPT4Limit) {
+				console.log('Token count exceeds GPT-4 limits but within GPT-4 Turbo limits');
+				console.log('Recommendations:', limitCheck.recommendations);
+			}
+
 			// Estimate cost
 			const costEstimate = TokenEstimator.estimateCost(tokenEstimate.totalTokens);
+			console.log(`Estimated cost: $${costEstimate.totalCost} (Input: $${costEstimate.inputCost}, Output: $${costEstimate.outputCost})`);
 
-			// Show confirmation dialog with note count and token estimate
-			const confirmationData: ConfirmationData = {
-				filterResult,
-				tokenEstimate,
-				costEstimate,
-				limitCheck
-			};
-
-			const confirmationModal = new ConfirmationModal(
-				this.app,
-				confirmationData,
-				() => {
-					// User confirmed - proceed with summary generation
-					console.log('User confirmed summary generation');
-					this.proceedWithSummaryGeneration(filterResult, tokenEstimate);
-				},
-				() => {
-					// User cancelled
-					console.log('User cancelled summary generation');
-				}
-			);
-
-			confirmationModal.open();
+			// TODO: Show confirmation dialog with note count and token estimate
+			// TODO: Implement actual summarization on confirmation
+			console.log('Summary generation would proceed here...');
 
 		} catch (error) {
 			console.error('Error processing date selection:', error);
 			// TODO: Show user-friendly error notification
 		}
-	}
-
-	private async proceedWithSummaryGeneration(filterResult: NoteFilterResult, tokenEstimate: TokenEstimate) {
-		console.log('Proceeding with summary generation...');
-		console.log(`Processing ${filterResult.totalCount} notes with ${tokenEstimate.totalTokens} estimated tokens`);
-		
-		// TODO: Implement actual LLM API call and summary generation
-		// For now, just log that we would proceed
-		console.log('This is where the LLM API call would happen');
-		console.log('Summary would be generated and saved to:', this.settings.outputFolder);
 	}
 
 	async loadSettings() {

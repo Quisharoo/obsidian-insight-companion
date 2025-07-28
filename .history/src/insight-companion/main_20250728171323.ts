@@ -113,16 +113,6 @@ export default class InsightCompanionPlugin extends Plugin {
 		}
 	}
 
-	private async proceedWithSummaryGeneration(filterResult: NoteFilterResult, tokenEstimate: TokenEstimate) {
-		console.log('Proceeding with summary generation...');
-		console.log(`Processing ${filterResult.totalCount} notes with ${tokenEstimate.totalTokens} estimated tokens`);
-		
-		// TODO: Implement actual LLM API call and summary generation
-		// For now, just log that we would proceed
-		console.log('This is where the LLM API call would happen');
-		console.log('Summary would be generated and saved to:', this.settings.outputFolder);
-	}
-
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 	}
