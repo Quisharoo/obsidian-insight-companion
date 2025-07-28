@@ -1,6 +1,7 @@
 import esbuild from "esbuild";
 import process from "process";
 import builtins from "builtin-modules";
+import fs from "fs";
 
 const banner =
 `/*
@@ -37,12 +38,24 @@ const context = await esbuild.context({
 	logLevel: "info",
 	sourcemap: prod ? false : 'inline',
 	treeShaking: true,
-	outfile: 'main.js',
+	outfile: 'dist/main.js',
+
 });
+
+// Copy manifest.json to dist folder
+function copyManifest() {
+	if (!fs.existsSync('dist')) {
+		fs.mkdirSync('dist');
+	}
+	fs.copyFileSync('src/insight-companion/manifest.json', 'dist/manifest.json');
+	console.log('Copied manifest.json to dist/');
+}
 
 if (prod) {
 	await context.rebuild();
+	copyManifest();
 	process.exit(0);
 } else {
 	await context.watch();
+	copyManifest();
 } 
