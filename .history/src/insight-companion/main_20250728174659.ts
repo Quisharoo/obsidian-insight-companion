@@ -184,7 +184,7 @@ export default class InsightCompanionPlugin extends Plugin {
 	/**
 	 * Initialize OpenAI services when API key is available
 	 */
-	public initializeOpenAIServices() {
+	private initializeOpenAIServices() {
 		if (!this.settings.openaiApiKey || this.settings.openaiApiKey.trim() === '') {
 			console.log('No OpenAI API key provided, OpenAI services disabled');
 			this.openaiService = null;
@@ -314,8 +314,6 @@ class InsightCompanionSettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.openaiApiKey = value;
 					await this.plugin.saveSettings();
-					// Reinitialize OpenAI services when API key changes
-					this.plugin.initializeOpenAIServices();
 				}));
 
 		new Setting(containerEl)

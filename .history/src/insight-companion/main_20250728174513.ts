@@ -181,102 +181,6 @@ export default class InsightCompanionPlugin extends Plugin {
 		}
 	}
 
-	/**
-	 * Initialize OpenAI services when API key is available
-	 */
-	public initializeOpenAIServices() {
-		if (!this.settings.openaiApiKey || this.settings.openaiApiKey.trim() === '') {
-			console.log('No OpenAI API key provided, OpenAI services disabled');
-			this.openaiService = null;
-			this.summaryGenerator = null;
-			return;
-		}
-
-		try {
-			// Initialize OpenAI service
-			const openaiConfig: OpenAIConfig = {
-				apiKey: this.settings.openaiApiKey,
-				model: 'gpt-4',
-				maxTokens: 4096,
-				temperature: 0.7
-			};
-
-			this.openaiService = new OpenAIService(openaiConfig);
-			this.summaryGenerator = new SummaryGenerator(this.openaiService);
-
-			console.log('OpenAI services initialized successfully');
-		} catch (error) {
-			console.error('Failed to initialize OpenAI services:', error);
-			this.openaiService = null;
-			this.summaryGenerator = null;
-		}
-	}
-
-	/**
-	 * Update progress notification during summary generation
-	 */
-	private updateProgressNotification(notice: Notice | null, progress: SummaryProgress) {
-		if (!notice) return;
-
-		let emoji = '🔄';
-		switch (progress.stage) {
-			case 'chunking':
-				emoji = '📊';
-				break;
-			case 'generating':
-				emoji = '🧠';
-				break;
-			case 'combining':
-				emoji = '🔗';
-				break;
-			case 'complete':
-				emoji = '✅';
-				break;
-			case 'error':
-				emoji = '❌';
-				break;
-		}
-
-		const progressText = progress.totalChunks > 1 
-			? `${emoji} ${progress.message} (${progress.currentChunk}/${progress.totalChunks})`
-			: `${emoji} ${progress.message}`;
-
-		notice.setMessage(progressText);
-	}
-
-	/**
-	 * Handle errors during summary generation with appropriate user messaging
-	 */
-	private handleSummaryGenerationError(error: OpenAIError) {
-		let message = '';
-		let duration = 8000;
-
-		switch (error.type) {
-			case 'authentication':
-				message = '❌ Authentication failed. Please check your OpenAI API key in settings.';
-				duration = 10000;
-				break;
-			case 'rate_limit':
-				message = `❌ Rate limit exceeded. ${error.retryAfter ? `Try again in ${error.retryAfter} seconds.` : 'Please try again later.'}`;
-				duration = 10000;
-				break;
-			case 'token_limit':
-				message = '❌ Content too large for API. Try selecting fewer notes or a smaller date range.';
-				duration = 10000;
-				break;
-			case 'network':
-				message = '❌ Network error. Please check your internet connection and try again.';
-				duration = 8000;
-				break;
-			default:
-				message = `❌ Summary generation failed: ${error.message}`;
-				duration = 8000;
-				break;
-		}
-
-		new Notice(message, duration);
-	}
-
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 	}
@@ -314,8 +218,6 @@ class InsightCompanionSettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.openaiApiKey = value;
 					await this.plugin.saveSettings();
-					// Reinitialize OpenAI services when API key changes
-					this.plugin.initializeOpenAIServices();
 				}));
 
 		new Setting(containerEl)
