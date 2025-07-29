@@ -184,7 +184,8 @@ describe('PromptGenerator', () => {
 			const result = PromptGenerator.combineSummariesPrompt(
 				mockChunkSummaries, 
 				10, 
-				mockDateContext
+				mockDateContext,
+				mockNotes
 			);
 
 			expect(result.noteCount).toBe(10);
@@ -198,7 +199,8 @@ describe('PromptGenerator', () => {
 			const result = PromptGenerator.combineSummariesPrompt(
 				mockChunkSummaries, 
 				10, 
-				mockDateContext
+				mockDateContext,
+				mockNotes
 			);
 
 			expect(result.content).toContain('2024-01-01 to 2024-01-31');
@@ -208,7 +210,8 @@ describe('PromptGenerator', () => {
 			const result = PromptGenerator.combineSummariesPrompt(
 				mockChunkSummaries, 
 				10, 
-				mockFolderContext
+				mockFolderContext,
+				mockNotes
 			);
 
 			expect(result.content).toContain('from the folder "Projects"');
@@ -219,7 +222,8 @@ describe('PromptGenerator', () => {
 			const result = PromptGenerator.combineSummariesPrompt(
 				mockChunkSummaries, 
 				10, 
-				mockDateContext
+				mockDateContext,
+				mockNotes
 			);
 
 			expect(result.content).toContain('--- CHUNK 1 SUMMARY ---');
@@ -237,6 +241,7 @@ describe('PromptGenerator', () => {
 				mockChunkSummaries, 
 				10, 
 				mockDateContext,
+				mockNotes,
 				config
 			);
 
@@ -244,8 +249,23 @@ describe('PromptGenerator', () => {
 			expect(result.content).toContain('Write in a freeform, natural voice');
 			expect(result.content).toContain('Do not require specific sections or headings');
 			expect(result.content).toContain('## Notes Referenced');
-			expect(result.content).toContain('[[Note Title]]: one-line observation, dry reaction, or quote');
+			expect(result.content).toContain('- [[Note 1]]: included in analysis');
+			expect(result.content).toContain('- [[Note 2]]: included in analysis');
 			expect(result.content).toContain('Write in freeform style and end with a "Notes Referenced" section');
+		});
+
+		test('should use structured format by default in combineSummariesPrompt', () => {
+			const result = PromptGenerator.combineSummariesPrompt(
+				mockChunkSummaries, 
+				10, 
+				mockDateContext,
+				mockNotes
+			);
+
+			expect(result.content).toContain('### 📋 CRITICAL OUTPUT REQUIREMENTS:');
+			expect(result.content).toContain('## Key Themes');
+			expect(result.content).toContain('## Notes Referenced');
+			expect(result.content).toContain('Follow the structured format with clear headings');
 		});
 	});
 
@@ -415,8 +435,10 @@ describe('PromptGenerator', () => {
 
 			expect(structuredResult.content).toContain('## Notes Referenced');
 			expect(freeformResult.content).toContain('## Notes Referenced');
-			expect(structuredResult.content).toContain('[[Note Title]]: one-line observation, dry reaction, or quote');
-			expect(freeformResult.content).toContain('[[Note Title]]: one-line observation, dry reaction, or quote');
+			expect(structuredResult.content).toContain('- [[Note 1]]: included in analysis');
+			expect(freeformResult.content).toContain('- [[Note 1]]: included in analysis');
+			expect(structuredResult.content).toContain('- [[Note 2]]: included in analysis');
+			expect(freeformResult.content).toContain('- [[Note 2]]: included in analysis');
 		});
 	});
 
@@ -435,6 +457,7 @@ describe('PromptGenerator', () => {
 				mockChunkSummaries, 
 				10, 
 				mockDateContext,
+				mockNotes,
 				config
 			);
 
@@ -454,6 +477,7 @@ describe('PromptGenerator', () => {
 				mockChunkSummaries, 
 				10, 
 				mockDateContext,
+				mockNotes,
 				config
 			);
 
@@ -469,24 +493,84 @@ describe('PromptGenerator', () => {
 			const result = PromptGenerator.combineSummariesPrompt(
 				mockChunkSummaries, 
 				10, 
-				mockDateContext
+				mockDateContext,
+				mockNotes
 			);
 
 			expect(result.content).toContain('### 📋 CRITICAL OUTPUT REQUIREMENTS:');
 			expect(result.content).toContain('## Key Themes');
 		});
+	});
 
-		test('should use structured format by default in combineSummariesPrompt', () => {
-			const result = PromptGenerator.combineSummariesPrompt(
-				mockChunkSummaries, 
-				10, 
-				mockDateContext
-			);
+	describe('generateNotesReferencedSection', () => {
+		test('should generate Notes Referenced section from notes', () => {
+			// Access the private method for testing using TypeScript bracket notation
+			const result = (PromptGenerator as any).generateNotesReferencedSection(mockNotes);
+			
+			expect(result).toContain('## Notes Referenced');
+			expect(result).toContain('- [[Note 1]]: included in analysis');
+			expect(result).toContain('- [[Note 2]]: included in analysis');
+		});
 
-			expect(result.content).toContain('### 📋 CRITICAL OUTPUT REQUIREMENTS:');
-			expect(result.content).toContain('## Key Themes');
+		test('should handle empty notes array', () => {
+			const result = (PromptGenerator as any).generateNotesReferencedSection([]);
+			
+			expect(result).toContain('## Notes Referenced');
+			expect(result).toContain('[No notes were analyzed]');
+		});
+
+		test('should extract note titles correctly from file paths', () => {
+			const notesWithPaths: FilteredNote[] = [
+				{
+					file: { path: 'folder/subfolder/Complex Note Name.md' } as any,
+					content: 'Content',
+					createdTime: Date.now(),
+					modifiedTime: Date.now()
+				},
+				{
+					file: { path: 'Another Note.md' } as any,
+					content: 'Content',
+					createdTime: Date.now(),
+					modifiedTime: Date.now()
+				}
+			];
+
+			const result = (PromptGenerator as any).generateNotesReferencedSection(notesWithPaths);
+			
+			expect(result).toContain('- [[Complex Note Name]]: included in analysis');
+			expect(result).toContain('- [[Another Note]]: included in analysis');
+			expect(result).not.toContain('.md');
+			expect(result).not.toContain('folder/subfolder/');
+		});
+
+		test('should format multiple notes correctly', () => {
+			const result = (PromptGenerator as any).generateNotesReferencedSection(mockNotes);
+			
+			expect(result.split('\n')).toHaveLength(3); // Header + 2 note lines
+			expect(result).toMatch(/^## Notes Referenced\n- \[\[Note 1\]\]: included in analysis\n- \[\[Note 2\]\]: included in analysis$/);
+		});
+	});
+
+	describe('include Notes Referenced section at the end', () => {
+		test('should include Notes Referenced section at the end', () => {
+			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext);
+
 			expect(result.content).toContain('## Notes Referenced');
-			expect(result.content).toContain('Follow the structured format with clear headings');
+			expect(result.content).toContain('- [[Note 1]]: included in analysis');
+			expect(result.content).toContain('- [[Note 2]]: included in analysis');
+			// Should be at the end
+			expect(result.content.endsWith('- [[Note 2]]: included in analysis')).toBe(true);
+		});
+
+		test('should place Notes Referenced section at end in both styles', () => {
+			const structuredResult = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext, { insightStyle: 'structured' });
+			const freeformResult = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext, { insightStyle: 'freeform' });
+
+			// Both should end with Notes Referenced section
+			expect(structuredResult.content).toContain('## Notes Referenced');
+			expect(freeformResult.content).toContain('## Notes Referenced');
+			expect(structuredResult.content.endsWith('- [[Note 2]]: included in analysis')).toBe(true);
+			expect(freeformResult.content.endsWith('- [[Note 2]]: included in analysis')).toBe(true);
 		});
 	});
 }); 

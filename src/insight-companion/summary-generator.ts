@@ -131,7 +131,8 @@ export class SummaryGenerator {
 				const combinedResult = await this.combineSummaries(
 					chunkSummaries, 
 					notes.length, 
-					filterResult
+					filterResult,
+					notes
 				);
 
 				finalSummary = combinedResult.content;
@@ -302,7 +303,8 @@ export class SummaryGenerator {
 	private async combineSummaries(
 		chunkSummaries: string[], 
 		totalNoteCount: number, 
-		filterResult: NoteFilterResult
+		filterResult: NoteFilterResult,
+		notes: FilteredNote[]
 	): Promise<OpenAIResponse> {
 		
 		const context = {
@@ -316,6 +318,7 @@ export class SummaryGenerator {
 			chunkSummaries, 
 			totalNoteCount, 
 			context,
+			notes,
 			this.config.promptConfig
 		);
 

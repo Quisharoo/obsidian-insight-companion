@@ -35,8 +35,9 @@ export class PromptGenerator {
 		const systemPrompt = this.buildSystemPrompt(finalConfig);
 		const notesContent = this.buildNotesContent(notes, finalConfig);
 		const instructionPrompt = this.buildInstructionPrompt(context, notes.length, finalConfig);
+		const notesReferencedSection = this.generateNotesReferencedSection(notes);
 		
-		const fullPrompt = `${systemPrompt}\n\n${notesContent}\n\n${instructionPrompt}`;
+		const fullPrompt = `${systemPrompt}\n\n${notesContent}\n\n${instructionPrompt}\n\n${notesReferencedSection}`;
 		
 		return {
 			content: fullPrompt,
@@ -81,11 +82,7 @@ Say:
 - Mention what patterns, contradictions, unresolved bits you notice
 - Be observational, not summarizing each note
 - Encourage natural flow and grouping, but do not require labels or bullet points
-- **End your response with:**
-
-## Notes Referenced
-- [[Note Title]]: one-line observation, dry reaction, or quote
-- [[Another Note]]: what stood out or felt odd`;
+- **End your response with a "Notes Referenced" section**`;
 		} else {
 			// Structured format (default)
 			return `${basePersonality}
@@ -111,9 +108,7 @@ Say:
 ## Action Items & Next Steps
 [What feels open, hanging, or waiting? Don't invent tasks — just point at loose ends.]
 
-## Notes Referenced
-- [[Note Title]]: one-line observation, dry reaction, or quote
-- [[Another Note]]: what stood out or felt odd`;
+**End with a "Notes Referenced" section**`;
 		}
 	}
 
@@ -206,6 +201,24 @@ When referencing notes in your analysis:
 	}
 
 	/**
+	 * Generate the Notes Referenced section from actual notes
+	 */
+	private static generateNotesReferencedSection(notes: FilteredNote[]): string {
+		if (notes.length === 0) {
+			return '## Notes Referenced\n[No notes were analyzed]';
+		}
+
+		const notesReferenced = notes
+			.map(note => {
+				const title = this.extractNoteTitle(note.file.path);
+				return `- [[${title}]]: included in analysis`;
+			})
+			.join('\n');
+
+		return `## Notes Referenced\n${notesReferenced}`;
+	}
+
+	/**
 	 * Generate prompt for analyzing a specific chunk of notes
 	 */
 	static buildChunkAnalysisPrompt(
@@ -258,6 +271,7 @@ What's worth noticing? What stands out? Who keeps showing up? What feels unfinis
 		chunkSummaries: string[], 
 		totalNoteCount: number, 
 		context: { dateRange?: DateRange; folderName?: string; folderPath?: string; mode: 'date' | 'folder' },
+		notes: FilteredNote[],
 		config: Partial<PromptConfig> = {}
 	): GeneratedPrompt {
 		const finalConfig = { ...this.DEFAULT_CONFIG, ...config };
@@ -279,11 +293,7 @@ You're allowed to be dry. Observational. Even funny — in that "I've seen this 
 - Mention what patterns, contradictions, unresolved bits you notice
 - Be observational, not summarizing each note
 - Encourage natural flow and grouping, but do not require labels or bullet points
-- **End your response with:**
-
-## Notes Referenced
-- [[Note Title]]: one-line observation, dry reaction, or quote
-- [[Another Note]]: what stood out or felt odd`;
+- **End your response with a "Notes Referenced" section**`;
 		} else {
 			// Structured format (default)
 			systemPrompt = `${basePersonality}
@@ -309,9 +319,7 @@ You're allowed to be dry. Observational. Even funny — in that "I've seen this 
 ## Action Items & Next Steps
 [What feels open, hanging, or waiting? Don't invent tasks — just point at loose ends.]
 
-## Notes Referenced
-- [[Note Title]]: one-line observation, dry reaction, or quote
-- [[Another Note]]: what stood out or felt odd`;
+**End with a "Notes Referenced" section**`;
 		}
 
 		const summariesContent = chunkSummaries
@@ -339,7 +347,8 @@ ${finalConfig.insightStyle === 'freeform'
 	: 'Follow the structured format with clear headings and end with a "Notes Referenced" section listing all the notes that were analyzed.'
 }`;
 
-		const fullPrompt = `${systemPrompt}\n\n${summariesContent}\n\n${instructionPrompt}`;
+		const notesReferencedSection = this.generateNotesReferencedSection(notes);
+		const fullPrompt = `${systemPrompt}\n\n${summariesContent}\n\n${instructionPrompt}\n\n${notesReferencedSection}`;
 		
 		return {
 			content: fullPrompt,
