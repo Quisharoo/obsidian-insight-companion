@@ -35,34 +35,57 @@ describe('PromptGenerator', () => {
 	];
 
 	describe('generateInsightPrompt', () => {
-		test('should generate a valid prompt with notes and date range', () => {
-			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext);
+		test('should generate a complete prompt with default config', () => {
+			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateRange);
 
 			expect(result.noteCount).toBe(2);
+			expect(result.estimatedTokens).toBeGreaterThan(0);
+			expect(result.content).toContain('You are an expert analyst');
 			expect(result.content).toContain('NOTES TO ANALYZE (2 total)');
 			expect(result.content).toContain('NOTE 1: Note 1');
 			expect(result.content).toContain('NOTE 2: Note 2');
-			expect(result.content).toContain('Analyze the 2 notes above from the period 2024-01-01 to 2024-01-31');
-			expect(result.estimatedTokens).toBeGreaterThan(0);
+			expect(result.content).toContain('2024-01-01 to 2024-01-31');
 		});
 
-		test('should truncate long note content correctly', () => {
-			const longContentNotes: FilteredNote[] = [
-				{
-					file: { path: 'Long Note.md' } as any,
-					content: 'A'.repeat(1000), // Very long content
-					createdTime: Date.now(),
-					modifiedTime: Date.now()
-				}
-			];
+		test('should include metadata when configured', () => {
+			const config: Partial<PromptConfig> = {
+				includeMetadata: true
+			};
 
-			const result = PromptGenerator.generateInsightPrompt(longContentNotes, mockDateContext);
+			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateRange, config);
 
-			expect(result.content).toContain('Long Note');
-			// Should contain truncation indicator
+			expect(result.content).toContain('Created:');
+			expect(result.content).toContain('Modified:');
+		});
+
+		test('should exclude metadata when configured', () => {
+			const config: Partial<PromptConfig> = {
+				includeMetadata: false
+			};
+
+			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateRange, config);
+
+			expect(result.content).not.toContain('Created:');
+			expect(result.content).not.toContain('Modified:');
+		});
+
+		test('should truncate content when it exceeds maxNotePreview', () => {
+			const longContent = 'A'.repeat(1000);
+			const notesWithLongContent: FilteredNote[] = [{
+				file: { path: 'long-note.md' } as any,
+				content: longContent,
+				createdTime: Date.now(),
+				modifiedTime: Date.now()
+			}];
+
+			const config: Partial<PromptConfig> = {
+				maxNotePreview: 100
+			};
+
+			const result = PromptGenerator.generateInsightPrompt(notesWithLongContent, mockDateRange, config);
+
 			expect(result.content).toContain('...[truncated]');
-			// Should not contain the full 1000 'A's 
-			expect(result.content).not.toContain('A'.repeat(1000));
+			expect(result.content).not.toContain('A'.repeat(200));
 		});
 
 		test('should include focus areas when provided', () => {
@@ -70,7 +93,7 @@ describe('PromptGenerator', () => {
 				focusAreas: ['Project Management', 'Team Collaboration']
 			};
 
-			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext, config);
+			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateRange, config);
 
 			expect(result.content).toContain('SPECIAL FOCUS AREAS:');
 			expect(result.content).toContain('Project Management');
@@ -87,7 +110,7 @@ describe('PromptGenerator', () => {
 				}
 			];
 
-			const result = PromptGenerator.generateInsightPrompt(notesWithPaths, mockDateContext);
+			const result = PromptGenerator.generateInsightPrompt(notesWithPaths, mockDateRange);
 
 			expect(result.content).toContain('NOTE 1: Complex Note Name');
 			// Note: The prompt may contain ".md" in instructions, so check more specifically
@@ -97,7 +120,7 @@ describe('PromptGenerator', () => {
 
 		test('should handle single note', () => {
 			const singleNote = [mockNotes[0]];
-			const result = PromptGenerator.generateInsightPrompt(singleNote, mockDateContext);
+			const result = PromptGenerator.generateInsightPrompt(singleNote, mockDateRange);
 
 			expect(result.noteCount).toBe(1);
 			expect(result.content).toContain('NOTES TO ANALYZE (1 total)');
@@ -105,134 +128,69 @@ describe('PromptGenerator', () => {
 		});
 
 		test('should handle empty notes array', () => {
-			const result = PromptGenerator.generateInsightPrompt([], mockDateContext);
+			const result = PromptGenerator.generateInsightPrompt([], mockDateRange);
 
 			expect(result.noteCount).toBe(0);
 			expect(result.content).toContain('NOTES TO ANALYZE (0 total)');
 		});
-
-		test('should generate correct prompt for folder mode', () => {
-			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockFolderContext);
-
-			expect(result.noteCount).toBe(2);
-			expect(result.content).toContain('NOTES TO ANALYZE (2 total)');
-			expect(result.content).toContain('Analyze the 2 notes above from the folder "Projects" (projects)');
-			expect(result.content).not.toContain('2024-01-01');
-			expect(result.content).not.toContain('2024-01-31');
-		});
-
-		test('should handle folder mode without folderPath', () => {
-			const contextWithoutPath = {
-				folderName: 'Projects',
-				mode: 'folder' as const
-			};
-
-			const result = PromptGenerator.generateInsightPrompt(mockNotes, contextWithoutPath);
-
-			expect(result.content).toContain('from the folder "Projects"');
-			expect(result.content).not.toContain('(projects)');
-		});
 	});
 
 	describe('generateChunkPrompt', () => {
-		test('should generate chunk-specific prompts', () => {
-			const result = PromptGenerator.buildChunkAnalysisPrompt(
-				[mockNotes[0]], 
-				0, 
-				3, 
-				mockDateContext
+		test('should generate chunk prompt with proper indexing', () => {
+			const result = PromptGenerator.generateChunkPrompt(
+				mockNotes, 
+				1, // chunk index
+				3, // total chunks
+				mockDateRange
 			);
 
-			expect(result.noteCount).toBe(1);
-			expect(result.content).toContain('chunk 1 of 3');
-			expect(result.content).toContain('partial analysis');
+			expect(result.noteCount).toBe(2);
+			expect(result.content).toContain('chunk 2 of 3');
+			expect(result.content).toContain('part 2 of 3 total chunks');
+			expect(result.content).toContain('partial insight summary');
 		});
 
-		test('should include chunk context', () => {
-			const result = PromptGenerator.buildChunkAnalysisPrompt(
-				mockNotes, 
-				1, 
-				2, 
-				mockDateContext
-			);
+		test('should include analysis instructions for chunks', () => {
+			const result = PromptGenerator.generateChunkPrompt(mockNotes, 0, 2, mockDateRange);
 
-			expect(result.content).toContain('chunk 2 of 2');
-			expect(result.content).toContain('2024-01-01 to 2024-01-31');
+			expect(result.content).toContain('Key themes in this chunk');
+			expect(result.content).toContain('Important people mentioned');
+			expect(result.content).toContain('Action items identified');
+			expect(result.content).toContain('Notable insights or patterns');
 		});
 
-		test('should work with folder context', () => {
-			const result = PromptGenerator.buildChunkAnalysisPrompt(
-				mockNotes, 
-				0, 
-				2, 
-				mockFolderContext
-			);
+		test('should mention it will be combined with other chunks', () => {
+			const result = PromptGenerator.generateChunkPrompt(mockNotes, 0, 2, mockDateRange);
 
-			expect(result.content).toContain('chunk 1 of 2');
-			expect(result.content).toContain('from the folder "Projects"');
-			expect(result.content).not.toContain('2024-01-01');
+			expect(result.content).toContain('combined with other chunk analyses');
 		});
 	});
 
 	describe('generateCombinationPrompt', () => {
 		const mockChunkSummaries = [
-			'Summary 1 content',
-			'Summary 2 content'
+			'# Chunk 1 Summary\n\nKey themes: Project planning\nPeople: John, Jane\nActions: Complete design',
+			'# Chunk 2 Summary\n\nKey themes: Team meetings\nPeople: Bob, Alice\nActions: Schedule review'
 		];
 
-		test('should combine multiple summaries', () => {
-			const result = PromptGenerator.combineSummariesPrompt(
+		test('should generate combination prompt with all summaries', () => {
+			const result = PromptGenerator.generateCombinationPrompt(
 				mockChunkSummaries, 
 				10, 
-				mockDateContext
+				mockDateRange
 			);
 
 			expect(result.noteCount).toBe(10);
-			expect(result.content).toContain('2 chunk summaries');
-			expect(result.content).toContain('10 total notes');
 			expect(result.content).toContain('CHUNK 1 SUMMARY');
 			expect(result.content).toContain('CHUNK 2 SUMMARY');
+			expect(result.content).toContain('Project planning');
+			expect(result.content).toContain('Team meetings');
 		});
 
-		test('should include date context', () => {
-			const result = PromptGenerator.combineSummariesPrompt(
+		test('should include comprehensive analysis structure', () => {
+			const result = PromptGenerator.generateCombinationPrompt(
 				mockChunkSummaries, 
-				10, 
-				mockDateContext
-			);
-
-			expect(result.content).toContain('2024-01-01 to 2024-01-31');
-		});
-
-		test('should include folder context', () => {
-			const result = PromptGenerator.combineSummariesPrompt(
-				mockChunkSummaries, 
-				10, 
-				mockFolderContext
-			);
-
-			expect(result.content).toContain('from the folder "Projects"');
-			expect(result.content).not.toContain('2024-01-01');
-		});
-
-		test('should preserve chunk boundaries', () => {
-			const result = PromptGenerator.combineSummariesPrompt(
-				mockChunkSummaries, 
-				10, 
-				mockDateContext
-			);
-
-			expect(result.content).toContain('--- CHUNK 1 SUMMARY ---');
-			expect(result.content).toContain('--- CHUNK 2 SUMMARY ---');
-			expect(result.content).toContain('Summary 1 content');
-			expect(result.content).toContain('Summary 2 content');
-		});
-
-		test('should provide comprehensive structure template', () => {
-			const result = PromptGenerator.combineSummariesPrompt(
-				mockChunkSummaries, 
-				10, 
-				mockDateContext
+				5, 
+				mockDateRange
 			);
 
 			expect(result.content).toContain('# Insight Summary');
@@ -240,6 +198,41 @@ describe('PromptGenerator', () => {
 			expect(result.content).toContain('## Important People');
 			expect(result.content).toContain('## Action Items & Next Steps');
 			expect(result.content).toContain('## Cross-Chunk Insights');
+			expect(result.content).toContain('## Note References');
+		});
+
+		test('should preserve wiki links instruction', () => {
+			const result = PromptGenerator.generateCombinationPrompt(
+				mockChunkSummaries, 
+				5, 
+				mockDateRange
+			);
+
+			expect(result.content).toContain('[[Note Title]]');
+			expect(result.content).toContain('properly formatted for Obsidian');
+		});
+
+		test('should mention total note count', () => {
+			const result = PromptGenerator.generateCombinationPrompt(
+				mockChunkSummaries, 
+				15, 
+				mockDateRange
+			);
+
+			expect(result.content).toContain('15 total notes');
+			expect(result.content).toContain('2024-01-01 to 2024-01-31');
+		});
+
+		test('should handle single chunk summary', () => {
+			const singleSummary = [mockChunkSummaries[0]];
+			const result = PromptGenerator.generateCombinationPrompt(
+				singleSummary, 
+				3, 
+				mockDateRange
+			);
+
+			expect(result.content).toContain('CHUNK 1 SUMMARY');
+			expect(result.content).not.toContain('CHUNK 2 SUMMARY');
 		});
 	});
 
@@ -287,7 +280,7 @@ describe('PromptGenerator', () => {
 
 	describe('prompt structure and formatting', () => {
 		test('should include all required output format instructions', () => {
-			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext);
+			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateRange);
 
 					expect(result.content).toContain('clean Markdown without code block fences');
 		expect(result.content).toContain('[[Note Title]]');
@@ -299,7 +292,7 @@ describe('PromptGenerator', () => {
 		});
 
 		test('should provide clear analysis instructions', () => {
-			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext);
+			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateRange);
 
 			expect(result.content).toContain('ANALYSIS INSTRUCTIONS:');
 			expect(result.content).toContain('**Themes**: Identify recurring topics');
@@ -309,7 +302,7 @@ describe('PromptGenerator', () => {
 		});
 
 		test('should include quality guidelines', () => {
-			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext);
+			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateRange);
 
 			expect(result.content).toContain('Quality guidelines:');
 			expect(result.content).toContain('Be specific and evidence-based');
@@ -318,7 +311,7 @@ describe('PromptGenerator', () => {
 		});
 
 		test('should emphasize Obsidian compatibility', () => {
-			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext);
+			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateRange);
 
 			expect(result.content).toContain('Obsidian compatibility');
 			expect(result.content).toContain('without .md extension');
@@ -342,14 +335,14 @@ describe('PromptGenerator', () => {
 				modifiedTime: Date.now()
 			}];
 
-			const shortResult = PromptGenerator.generateInsightPrompt(shortNotes, mockDateContext);
-			const longResult = PromptGenerator.generateInsightPrompt(longNotes, mockDateContext);
+			const shortResult = PromptGenerator.generateInsightPrompt(shortNotes, mockDateRange);
+			const longResult = PromptGenerator.generateInsightPrompt(longNotes, mockDateRange);
 
 			expect(longResult.estimatedTokens).toBeGreaterThan(shortResult.estimatedTokens);
 		});
 
 		test('should provide reasonable token estimates', () => {
-			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext);
+			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateRange);
 
 			// Should be at least some tokens for the prompt structure
 			expect(result.estimatedTokens).toBeGreaterThan(100);

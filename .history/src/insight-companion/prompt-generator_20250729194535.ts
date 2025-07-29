@@ -213,12 +213,12 @@ Keep responses focused and actionable. This will be combined with other chunk an
 	}
 
 	/**
-	 * Generate prompt for combining multiple chunk summaries into a final summary
+	 * Generate a prompt for combining multiple chunk summaries into a final insight
 	 */
-	static combineSummariesPrompt(
+	static generateCombinationPrompt(
 		chunkSummaries: string[], 
-		totalNoteCount: number, 
-		context: { dateRange?: DateRange; folderName?: string; folderPath?: string; mode: 'date' | 'folder' }
+		totalNoteCount: number,
+		dateRange: DateRange
 	): GeneratedPrompt {
 		const systemPrompt = `You are combining partial insight summaries into a comprehensive final analysis. 
 
@@ -232,17 +232,7 @@ OUTPUT REQUIREMENTS:
 			.map((summary, index) => `--- CHUNK ${index + 1} SUMMARY ---\n${summary}`)
 			.join('\n\n');
 
-		// Build context description based on mode
-		let contextDescription: string;
-		if (context.mode === 'folder') {
-			contextDescription = `from the folder "${context.folderName}"${context.folderPath ? ` (${context.folderPath})` : ''}`;
-		} else if (context.dateRange) {
-			contextDescription = `from ${context.dateRange.startDate} to ${context.dateRange.endDate}`;
-		} else {
-			contextDescription = `from the selected collection`;
-		}
-
-		const instructionPrompt = `Combine the ${chunkSummaries.length} chunk summaries above into a comprehensive insight report for ${totalNoteCount} total notes ${contextDescription}.
+		const instructionPrompt = `Combine the ${chunkSummaries.length} chunk summaries above into a comprehensive insight report for ${totalNoteCount} total notes from ${dateRange.startDate} to ${dateRange.endDate}.
 
 Create a unified summary with:
 

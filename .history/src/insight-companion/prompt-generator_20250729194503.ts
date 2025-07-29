@@ -110,19 +110,9 @@ OUTPUT STRUCTURE:
 		noteCount: number, 
 		config: PromptConfig
 	): string {
-		// Build context description based on mode
-		let contextDescription: string;
-		if (context.mode === 'folder') {
-			contextDescription = `from the folder "${context.folderName}"${context.folderPath ? ` (${context.folderPath})` : ''}`;
-		} else if (context.dateRange) {
-			contextDescription = `from the period ${context.dateRange.startDate} to ${context.dateRange.endDate}`;
-		} else {
-			contextDescription = `from the selected collection`;
-		}
-
 		let instructions = `ANALYSIS INSTRUCTIONS:
 
-Analyze the ${noteCount} notes above ${contextDescription}.
+Analyze the ${noteCount} notes above from the period ${context.dateRange?.startDate} to ${context.dateRange?.endDate}.
 
 Focus on:
 1. **Themes**: Identify recurring topics, concepts, or patterns across notes
@@ -162,38 +152,27 @@ Quality guidelines:
 	}
 
 	/**
-	 * Generate prompt for analyzing a specific chunk of notes
+	 * Generate a prompt for chunked analysis (when notes need to be processed in batches)
 	 */
-	static buildChunkAnalysisPrompt(
+	static generateChunkPrompt(
 		notes: FilteredNote[], 
 		chunkIndex: number, 
-		totalChunks: number, 
-		context: { dateRange?: DateRange; folderName?: string; folderPath?: string; mode: 'date' | 'folder' }, 
+		totalChunks: number,
+		dateRange: DateRange, 
 		config: Partial<PromptConfig> = {}
 	): GeneratedPrompt {
 		const finalConfig = { ...this.DEFAULT_CONFIG, ...config };
 		
-		const systemPrompt = `You are analyzing a chunk of notes for insight extraction. This is chunk ${chunkIndex + 1} of ${totalChunks} total chunks.
+		const systemPrompt = `You are analyzing a subset of notes (chunk ${chunkIndex + 1} of ${totalChunks}). Generate a partial insight summary that will be combined with other chunks later.
 
-OUTPUT REQUIREMENTS:
-- Generate clean Markdown without code block fences  
-- Use [[Note Title]] format for note references (without .md extension)
+OUTPUT FORMAT: Clean Markdown without code fences
+- Use [[Note Title]] format for all note references
 - Focus on key themes, people, and actions in THIS chunk
 - Keep insights concise since this is a partial analysis`;
 
 		const notesContent = this.buildNotesContent(notes, finalConfig);
 		
-		// Build context description based on mode
-		let contextDescription: string;
-		if (context.mode === 'folder') {
-			contextDescription = `from the folder "${context.folderName}"${context.folderPath ? ` (${context.folderPath})` : ''}`;
-		} else if (context.dateRange) {
-			contextDescription = `from ${context.dateRange.startDate} to ${context.dateRange.endDate}`;
-		} else {
-			contextDescription = `from the selected collection`;
-		}
-
-		const instructionPrompt = `Analyze this chunk of ${notes.length} notes ${contextDescription} (part ${chunkIndex + 1} of ${totalChunks} total chunks).
+		const instructionPrompt = `Analyze this chunk of ${notes.length} notes from ${dateRange.startDate} to ${dateRange.endDate} (part ${chunkIndex + 1} of ${totalChunks} total chunks).
 
 Provide:
 1. Key themes in this chunk
@@ -213,12 +192,12 @@ Keep responses focused and actionable. This will be combined with other chunk an
 	}
 
 	/**
-	 * Generate prompt for combining multiple chunk summaries into a final summary
+	 * Generate a prompt for combining multiple chunk summaries into a final insight
 	 */
-	static combineSummariesPrompt(
+	static generateCombinationPrompt(
 		chunkSummaries: string[], 
-		totalNoteCount: number, 
-		context: { dateRange?: DateRange; folderName?: string; folderPath?: string; mode: 'date' | 'folder' }
+		totalNoteCount: number,
+		dateRange: DateRange
 	): GeneratedPrompt {
 		const systemPrompt = `You are combining partial insight summaries into a comprehensive final analysis. 
 
@@ -232,17 +211,7 @@ OUTPUT REQUIREMENTS:
 			.map((summary, index) => `--- CHUNK ${index + 1} SUMMARY ---\n${summary}`)
 			.join('\n\n');
 
-		// Build context description based on mode
-		let contextDescription: string;
-		if (context.mode === 'folder') {
-			contextDescription = `from the folder "${context.folderName}"${context.folderPath ? ` (${context.folderPath})` : ''}`;
-		} else if (context.dateRange) {
-			contextDescription = `from ${context.dateRange.startDate} to ${context.dateRange.endDate}`;
-		} else {
-			contextDescription = `from the selected collection`;
-		}
-
-		const instructionPrompt = `Combine the ${chunkSummaries.length} chunk summaries above into a comprehensive insight report for ${totalNoteCount} total notes ${contextDescription}.
+		const instructionPrompt = `Combine the ${chunkSummaries.length} chunk summaries above into a comprehensive insight report for ${totalNoteCount} total notes from ${dateRange.startDate} to ${dateRange.endDate}.
 
 Create a unified summary with:
 

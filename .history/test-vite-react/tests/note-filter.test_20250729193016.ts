@@ -2,16 +2,13 @@ import { App, TFile, TFolder } from 'obsidian';
 import { NoteFilterService, FilteredNote, NoteFilterResult } from '../../src/insight-companion/note-filter';
 import { DateRange } from '../../src/insight-companion/date-picker-modal';
 
-// Mock TFolder-like object for testing
-class MockTFolder {
-	path: string;
-	children: any[];
-	
-	constructor(path: string) {
-		this.path = path;
+// Mock TFolder class for instanceof checks
+const MockTFolder = class extends TFolder {
+	constructor(vault: any, path: string) {
+		super(vault, path);
 		this.children = [];
 	}
-}
+};
 
 // Mock TFile for testing
 class MockTFile implements Partial<TFile> {
@@ -294,17 +291,17 @@ describe('NoteFilterService Tests', () => {
 		let mockSubFolder: Partial<TFolder>;
 
 		beforeEach(() => {
-			// Create mock folder structure using MockTFolder instances
-			mockSubFolder = new MockTFolder('projects/meetings');
+			// Create mock folder structure using real TFolder instances
+			mockSubFolder = new MockTFolder(app.vault, 'projects/meetings');
 			mockSubFolder.children = [
-				{ path: 'projects/meetings/meeting1.md', stat: { ctime: Date.now(), mtime: Date.now() } } as TFile,
-				{ path: 'projects/meetings/meeting2.md', stat: { ctime: Date.now(), mtime: Date.now() } } as TFile
+				{ path: 'projects/meetings/meeting1.md' } as TFile,
+				{ path: 'projects/meetings/meeting2.md' } as TFile
 			];
 
-			mockFolder = new MockTFolder('projects');
+			mockFolder = new MockTFolder(app.vault, 'projects');
 			mockFolder.children = [
-				{ path: 'projects/note1.md', stat: { ctime: Date.now(), mtime: Date.now() } } as TFile,
-				{ path: 'projects/note2.md', stat: { ctime: Date.now(), mtime: Date.now() } } as TFile,
+				{ path: 'projects/note1.md' } as TFile,
+				{ path: 'projects/note2.md' } as TFile,
 				mockSubFolder as TFolder
 			];
 
@@ -362,11 +359,13 @@ describe('NoteFilterService Tests', () => {
 
 	describe('getFolderNotesMetadata', () => {
 		beforeEach(() => {
-			const mockFolder = new MockTFolder('projects');
-			mockFolder.children = [
-				{ path: 'projects/note1.md', stat: { ctime: Date.now(), mtime: Date.now() } } as TFile,
-				{ path: 'projects/note2.md', stat: { ctime: Date.now(), mtime: Date.now() } } as TFile
-			];
+			const mockFolder = {
+				path: 'projects',
+				children: [
+					{ path: 'projects/note1.md' } as TFile,
+					{ path: 'projects/note2.md' } as TFile
+				]
+			};
 
 			app.vault.getAbstractFileByPath = jest.fn().mockReturnValue(mockFolder);
 		});

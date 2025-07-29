@@ -38,15 +38,6 @@ describe('SummaryGenerator', () => {
 		mode: 'date'
 	};
 
-	const mockFolderFilterResult: NoteFilterResult = {
-		notes: mockNotes,
-		totalCount: mockNotes.length,
-		folderPath: 'projects',
-		folderName: 'Projects',
-		mode: 'folder'
-		// Note: dateRange is intentionally undefined for folder mode
-	};
-
 	const mockOpenAIResponse: OpenAIResponse = {
 		content: '# Test Summary\n\n## Key Themes\n- Theme 1\n- Theme 2',
 		tokensUsed: {
@@ -96,7 +87,6 @@ describe('SummaryGenerator', () => {
 				content: mockOpenAIResponse.content,
 				metadata: {
 					dateRange: mockDateRange,
-					mode: 'date',
 					notesAnalyzed: 2,
 					tokensUsed: mockOpenAIResponse.tokensUsed,
 					chunksProcessed: 1,
@@ -139,12 +129,11 @@ describe('SummaryGenerator', () => {
 				modifiedTime: Date.now()
 			}));
 
-					const largeFilterResult: NoteFilterResult = {
-			notes: largeNotes,
-			totalCount: largeNotes.length,
-			dateRange: mockDateRange,
-			mode: 'date'
-		};
+			const largeFilterResult: NoteFilterResult = {
+				notes: largeNotes,
+				totalCount: largeNotes.length,
+				dateRange: mockDateRange
+			};
 
 			// Mock responses for chunk summaries and final combination
 			const chunkResponse: OpenAIResponse = {
@@ -470,75 +459,16 @@ describe('SummaryGenerator', () => {
 				modifiedTime: Date.now()
 			};
 
-					const largeNoteResult: NoteFilterResult = {
-			notes: [largeNote],
-			totalCount: 1,
-			dateRange: mockDateRange,
-			mode: 'date'
-		};
+			const largeNoteResult: NoteFilterResult = {
+				notes: [largeNote],
+				totalCount: 1,
+				dateRange: mockDateRange
+			};
 
 			const result = await summaryGenerator.generateSummary(largeNoteResult, mockProgressCallback);
 
 			expect(result.metadata.notesAnalyzed).toBe(1);
 			expect(result.content).toBe(mockOpenAIResponse.content);
-		});
-
-		test('should handle folder mode without dateRange', async () => {
-			const result = await summaryGenerator.generateSummary(mockFolderFilterResult, mockProgressCallback);
-
-			expect(result).toBeDefined();
-			expect(result.content).toBe(mockOpenAIResponse.content);
-			expect(result.metadata.mode).toBe('folder');
-			expect(result.metadata.folderPath).toBe('projects');
-			expect(result.metadata.folderName).toBe('Projects');
-			expect(result.metadata.dateRange).toBeUndefined();
-			expect(result.metadata.notesAnalyzed).toBe(2);
-			expect(result.metadata.tokensUsed.total).toBe(1500);
-
-			expect(mockOpenAIService.generateCompletion).toHaveBeenCalledTimes(1);
-		});
-
-		test('should generate correct metadata for folder mode', async () => {
-			const result = await summaryGenerator.generateSummary(mockFolderFilterResult);
-
-			expect(result.metadata.mode).toBe('folder');
-			expect(result.metadata.folderPath).toBe('projects');
-			expect(result.metadata.folderName).toBe('Projects');
-			expect(result.metadata.dateRange).toBeUndefined();
-			
-			// Verify folder-specific metadata exists and date-specific metadata doesn't
-			expect(result.metadata).toHaveProperty('folderPath');
-			expect(result.metadata).toHaveProperty('folderName');
-			expect(result.metadata).not.toHaveProperty('dateRange');
-		});
-
-		test('should call progress callback correctly for folder mode', async () => {
-			await summaryGenerator.generateSummary(mockFolderFilterResult, mockProgressCallback);
-
-			// Verify progress callbacks were called
-			expect(mockProgressCallback).toHaveBeenCalledWith(
-				expect.objectContaining({
-					stage: 'chunking',
-					currentChunk: 0,
-					totalChunks: 1
-				})
-			);
-
-			expect(mockProgressCallback).toHaveBeenCalledWith(
-				expect.objectContaining({
-					stage: 'generating',
-					currentChunk: 1,
-					totalChunks: 1
-				})
-			);
-
-			expect(mockProgressCallback).toHaveBeenCalledWith(
-				expect.objectContaining({
-					stage: 'complete',
-					currentChunk: 1,
-					totalChunks: 1
-				})
-			);
 		});
 	});
 }); 

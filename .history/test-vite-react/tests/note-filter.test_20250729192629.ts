@@ -2,17 +2,6 @@ import { App, TFile, TFolder } from 'obsidian';
 import { NoteFilterService, FilteredNote, NoteFilterResult } from '../../src/insight-companion/note-filter';
 import { DateRange } from '../../src/insight-companion/date-picker-modal';
 
-// Mock TFolder-like object for testing
-class MockTFolder {
-	path: string;
-	children: any[];
-	
-	constructor(path: string) {
-		this.path = path;
-		this.children = [];
-	}
-}
-
 // Mock TFile for testing
 class MockTFile implements Partial<TFile> {
 	path: string;
@@ -286,113 +275,6 @@ describe('NoteFilterService Tests', () => {
 
 			expect(result.dateRange).toEqual(dateRange);
 			expect(result.totalCount).toBeGreaterThanOrEqual(0);
-		});
-	});
-
-	describe('filterNotesByFolder', () => {
-		let mockFolder: Partial<TFolder>;
-		let mockSubFolder: Partial<TFolder>;
-
-		beforeEach(() => {
-			// Create mock folder structure using MockTFolder instances
-			mockSubFolder = new MockTFolder('projects/meetings');
-			mockSubFolder.children = [
-				{ path: 'projects/meetings/meeting1.md', stat: { ctime: Date.now(), mtime: Date.now() } } as TFile,
-				{ path: 'projects/meetings/meeting2.md', stat: { ctime: Date.now(), mtime: Date.now() } } as TFile
-			];
-
-			mockFolder = new MockTFolder('projects');
-			mockFolder.children = [
-				{ path: 'projects/note1.md', stat: { ctime: Date.now(), mtime: Date.now() } } as TFile,
-				{ path: 'projects/note2.md', stat: { ctime: Date.now(), mtime: Date.now() } } as TFile,
-				mockSubFolder as TFolder
-			];
-
-			// Mock vault methods for folder tests
-			app.vault.getAbstractFileByPath = jest.fn().mockImplementation((path: string) => {
-				if (path === 'projects') return mockFolder;
-				if (path === 'projects/meetings') return mockSubFolder;
-				return null;
-			});
-		});
-
-		it('should filter all notes for root folder', async () => {
-			const result = await noteFilterService.filterNotesByFolder('', 'Vault Root');
-
-			expect(result.mode).toBe('folder');
-			expect(result.folderPath).toBe('');
-			expect(result.folderName).toBe('Vault Root');
-			expect(result.totalCount).toBe(4); // All mock files
-			expect(result.notes).toHaveLength(4);
-		});
-
-		it('should filter notes in specific folder recursively', async () => {
-			const result = await noteFilterService.filterNotesByFolder('projects', 'projects');
-
-			expect(result.mode).toBe('folder');
-			expect(result.folderPath).toBe('projects');
-			expect(result.folderName).toBe('projects');
-			expect(result.totalCount).toBe(4); // 2 from projects + 2 from meetings subfolder
-			expect(result.notes).toHaveLength(4);
-			expect(result.dateRange).toBeUndefined();
-		});
-
-		it('should return empty result for non-existent folder', async () => {
-			const result = await noteFilterService.filterNotesByFolder('nonexistent', 'nonexistent');
-
-			expect(result.mode).toBe('folder');
-			expect(result.totalCount).toBe(0);
-			expect(result.notes).toHaveLength(0);
-		});
-
-		it('should handle file read errors gracefully in folder mode', async () => {
-			app.vault.read = jest.fn().mockImplementation((file: TFile) => {
-				if (file.path.includes('meeting1')) {
-					throw new Error('Failed to read file');
-				}
-				return Promise.resolve(`Content of ${file.path}`);
-			});
-
-			const result = await noteFilterService.filterNotesByFolder('projects', 'projects');
-
-			// Should still return other files even if one fails
-			expect(result.totalCount).toBe(3);
-		});
-	});
-
-	describe('getFolderNotesMetadata', () => {
-		beforeEach(() => {
-			const mockFolder = new MockTFolder('projects');
-			mockFolder.children = [
-				{ path: 'projects/note1.md', stat: { ctime: Date.now(), mtime: Date.now() } } as TFile,
-				{ path: 'projects/note2.md', stat: { ctime: Date.now(), mtime: Date.now() } } as TFile
-			];
-
-			app.vault.getAbstractFileByPath = jest.fn().mockReturnValue(mockFolder);
-		});
-
-		it('should return metadata for folder without reading content', async () => {
-			const metadata = await noteFilterService.getFolderNotesMetadata('projects');
-
-			expect(metadata.count).toBe(2);
-			expect(metadata.files).toHaveLength(2);
-			expect(app.vault.read).not.toHaveBeenCalled();
-		});
-
-		it('should return all files for root folder', async () => {
-			const metadata = await noteFilterService.getFolderNotesMetadata('');
-
-			expect(metadata.count).toBe(4); // All mock files
-			expect(metadata.files).toHaveLength(4);
-		});
-
-		it('should return empty metadata for non-existent folder', async () => {
-			app.vault.getAbstractFileByPath = jest.fn().mockReturnValue(null);
-
-			const metadata = await noteFilterService.getFolderNotesMetadata('nonexistent');
-
-			expect(metadata.count).toBe(0);
-			expect(metadata.files).toHaveLength(0);
 		});
 	});
 }); 

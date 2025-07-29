@@ -364,8 +364,8 @@ describe('NoteFilterService Tests', () => {
 		beforeEach(() => {
 			const mockFolder = new MockTFolder('projects');
 			mockFolder.children = [
-				{ path: 'projects/note1.md', stat: { ctime: Date.now(), mtime: Date.now() } } as TFile,
-				{ path: 'projects/note2.md', stat: { ctime: Date.now(), mtime: Date.now() } } as TFile
+				{ path: 'projects/note1.md' } as TFile,
+				{ path: 'projects/note2.md' } as TFile
 			];
 
 			app.vault.getAbstractFileByPath = jest.fn().mockReturnValue(mockFolder);

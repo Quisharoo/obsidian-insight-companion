@@ -444,11 +444,7 @@ The team has made concrete technical decisions including React for frontend deve
 		});
 
 		test('should validate token estimates accurately', async () => {
-			const dateContext = {
-				dateRange: mockDateRange,
-				mode: 'date' as const
-			};
-			const prompt = PromptGenerator.generateInsightPrompt(mockNotes, dateContext);
+			const prompt = PromptGenerator.generateInsightPrompt(mockNotes, mockDateRange);
 			
 			// Token estimate should be reasonable for our test data
 			expect(prompt.estimatedTokens).toBeGreaterThan(100);

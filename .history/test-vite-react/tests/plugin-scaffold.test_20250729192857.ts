@@ -74,16 +74,12 @@ describe('Plugin Scaffold Tests', () => {
       expect(plugin.addCommand).toHaveBeenCalledTimes(2);
     });
 
-    it('should have the correct command IDs and names', async () => {
+    it('should have the correct command ID and name', async () => {
       await plugin.onload();
       
-      const firstCommandCall = (plugin.addCommand as jest.Mock).mock.calls[0][0];
-      expect(firstCommandCall.id).toBe('generate-insight-summary');
-      expect(firstCommandCall.name).toBe('Generate Summary');
-      
-      const secondCommandCall = (plugin.addCommand as jest.Mock).mock.calls[1][0];
-      expect(secondCommandCall.id).toBe('generate-insight-summary-folder');
-      expect(secondCommandCall.name).toBe('Summarise by Folder');
+      const commandCall = (plugin.addCommand as jest.Mock).mock.calls[0][0];
+      expect(commandCall.id).toBe('generate-insight-summary');
+      expect(commandCall.name).toBe('Generate Summary');
     });
   });
 

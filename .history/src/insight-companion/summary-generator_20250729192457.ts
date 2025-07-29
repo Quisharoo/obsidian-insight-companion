@@ -69,7 +69,7 @@ export class SummaryGenerator {
 		progressCallback?: ProgressCallback
 	): Promise<SummaryResult> {
 		const startTime = Date.now();
-		const { notes } = filterResult;
+		const { notes, dateRange } = filterResult;
 
 		try {
 			// Determine if chunking is needed
@@ -89,7 +89,7 @@ export class SummaryGenerator {
 
 			if (totalChunks === 1) {
 				// Single chunk - direct generation
-				const result = await this.generateSingleSummary(chunks[0], filterResult, progressCallback);
+				const result = await this.generateSingleSummary(chunks[0], dateRange, progressCallback);
 				finalSummary = result.content;
 				totalTokensUsed = result.tokensUsed;
 				model = result.model;
@@ -110,7 +110,7 @@ export class SummaryGenerator {
 						chunks[i], 
 						i, 
 						totalChunks, 
-						filterResult
+						dateRange
 					);
 
 					chunkSummaries.push(chunkResult.content);
@@ -131,7 +131,7 @@ export class SummaryGenerator {
 				const combinedResult = await this.combineSummaries(
 					chunkSummaries, 
 					notes.length, 
-					filterResult
+					dateRange
 				);
 
 				finalSummary = combinedResult.content;
@@ -152,7 +152,7 @@ export class SummaryGenerator {
 			return {
 				content: finalSummary,
 				metadata: {
-					...(filterResult.mode === 'date' ? { dateRange: filterResult.dateRange } : {}),
+					...(filterResult.mode === 'date' ? { dateRange } : {}),
 					...(filterResult.mode === 'folder' ? { 
 						folderPath: filterResult.folderPath, 
 						folderName: filterResult.folderName 
@@ -242,7 +242,7 @@ export class SummaryGenerator {
 	 */
 	private async generateSingleSummary(
 		notes: FilteredNote[], 
-		filterResult: NoteFilterResult,
+		dateRange: DateRange,
 		progressCallback?: ProgressCallback
 	): Promise<OpenAIResponse> {
 		progressCallback?.({
@@ -252,16 +252,9 @@ export class SummaryGenerator {
 			message: 'Generating insights from notes...'
 		});
 
-		const context = {
-			dateRange: filterResult.dateRange,
-			folderName: filterResult.folderName,
-			folderPath: filterResult.folderPath,
-			mode: filterResult.mode
-		};
-
 		const prompt = PromptGenerator.generateInsightPrompt(
 			notes, 
-			context, 
+			dateRange, 
 			this.config.promptConfig
 		);
 
@@ -275,21 +268,13 @@ export class SummaryGenerator {
 		notes: FilteredNote[], 
 		chunkIndex: number, 
 		totalChunks: number, 
-		filterResult: NoteFilterResult
+		dateRange: DateRange
 	): Promise<OpenAIResponse> {
-		
-		const context = {
-			dateRange: filterResult.dateRange,
-			folderName: filterResult.folderName,
-			folderPath: filterResult.folderPath,
-			mode: filterResult.mode
-		};
-
-		const prompt = PromptGenerator.buildChunkAnalysisPrompt(
+		const prompt = PromptGenerator.generateChunkPrompt(
 			notes, 
 			chunkIndex, 
 			totalChunks, 
-			context, 
+			dateRange, 
 			this.config.promptConfig
 		);
 
@@ -302,20 +287,12 @@ export class SummaryGenerator {
 	private async combineSummaries(
 		chunkSummaries: string[], 
 		totalNoteCount: number, 
-		filterResult: NoteFilterResult
+		dateRange: DateRange
 	): Promise<OpenAIResponse> {
-		
-		const context = {
-			dateRange: filterResult.dateRange,
-			folderName: filterResult.folderName,
-			folderPath: filterResult.folderPath,
-			mode: filterResult.mode
-		};
-
-		const prompt = PromptGenerator.combineSummariesPrompt(
+		const prompt = PromptGenerator.generateCombinationPrompt(
 			chunkSummaries, 
 			totalNoteCount, 
-			context
+			dateRange
 		);
 
 		return await this.executeWithRetry(prompt.content);

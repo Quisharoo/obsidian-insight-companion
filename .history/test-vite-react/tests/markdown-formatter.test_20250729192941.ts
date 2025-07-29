@@ -90,7 +90,7 @@ describe('MarkdownFormatter', () => {
 			mockSummaryResult.metadata.chunksProcessed = 1;
 			const result = MarkdownFormatter.formatSummary(mockSummaryResult);
 
-			expect(result).toContain('- **Method:** Date-based, single-chunk');
+			expect(result).toContain('- **Method:** Single-pass analysis');
 		});
 
 		it('should include cost estimate by default', () => {

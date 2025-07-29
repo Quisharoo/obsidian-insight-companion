@@ -114,9 +114,9 @@ export class NoteFilterService {
 
 		const collectFiles = (currentFolder: TFolder) => {
 			currentFolder.children.forEach(child => {
-							if (child.path.endsWith('.md') && !('children' in child)) {
-				markdownFiles.push(child as TFile);
-			} else if (child && 'children' in child) {
+				if (child.path.endsWith('.md') && child instanceof TFile) {
+					markdownFiles.push(child);
+							} else if (child && 'children' in child) {
 				collectFiles(child as TFolder);
 			}
 			});

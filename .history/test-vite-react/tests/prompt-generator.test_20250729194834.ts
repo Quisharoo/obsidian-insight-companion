@@ -59,10 +59,8 @@ describe('PromptGenerator', () => {
 			const result = PromptGenerator.generateInsightPrompt(longContentNotes, mockDateContext);
 
 			expect(result.content).toContain('Long Note');
-			// Should contain truncation indicator
-			expect(result.content).toContain('...[truncated]');
-			// Should not contain the full 1000 'A's 
-			expect(result.content).not.toContain('A'.repeat(1000));
+			// Should not contain all 1000 'A's due to truncation
+			expect(result.content).not.toContain('A'.repeat(200));
 		});
 
 		test('should include focus areas when provided', () => {

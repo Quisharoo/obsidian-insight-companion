@@ -214,11 +214,7 @@ The team has made concrete technical decisions including React for frontend deve
 	describe('Complete Workflow Integration', () => {
 		test('should complete full workflow: notes → prompt → API → summary → file', async () => {
 			// Step 1: Generate prompt from notes
-			const dateContext = {
-				dateRange: mockDateRange,
-				mode: 'date' as const
-			};
-			const prompt = PromptGenerator.generateInsightPrompt(mockNotes, dateContext);
+			const prompt = PromptGenerator.generateInsightPrompt(mockNotes, mockDateRange);
 			
 			expect(prompt.noteCount).toBe(2);
 			expect(prompt.content).toContain('Project Alpha Planning');
@@ -444,11 +440,7 @@ The team has made concrete technical decisions including React for frontend deve
 		});
 
 		test('should validate token estimates accurately', async () => {
-			const dateContext = {
-				dateRange: mockDateRange,
-				mode: 'date' as const
-			};
-			const prompt = PromptGenerator.generateInsightPrompt(mockNotes, dateContext);
+			const prompt = PromptGenerator.generateInsightPrompt(mockNotes, mockDateRange);
 			
 			// Token estimate should be reasonable for our test data
 			expect(prompt.estimatedTokens).toBeGreaterThan(100);

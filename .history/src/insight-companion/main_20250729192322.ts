@@ -41,21 +41,12 @@ export default class InsightCompanionPlugin extends Plugin {
 		// Initialize OpenAI services if API key is available
 		this.initializeOpenAIServices();
 
-		// Add command to generate summary by date
+		// Add command to generate summary
 		this.addCommand({
 			id: 'generate-insight-summary',
 			name: 'Generate Summary',
 			callback: () => {
 				this.openDatePicker();
-			}
-		});
-
-		// Add command to generate summary by folder
-		this.addCommand({
-			id: 'generate-insight-summary-folder',
-			name: 'Summarise by Folder',
-			callback: () => {
-				this.openFolderPicker();
 			}
 		});
 
@@ -71,19 +62,6 @@ export default class InsightCompanionPlugin extends Plugin {
 			this.settings.lastDateRange,
 			(dateRange: DateRange) => {
 				this.handleDateSelection(dateRange);
-			}
-		);
-		
-		modal.open();
-	}
-
-	private openFolderPicker() {
-		console.log('Opening folder picker modal...');
-		
-		const modal = new FolderPickerModal(
-			this.app,
-			(folderResult: FolderPickerModalResult) => {
-				this.handleFolderSelection(folderResult);
 			}
 		);
 		
@@ -108,74 +86,45 @@ export default class InsightCompanionPlugin extends Plugin {
 				return;
 			}
 
-			await this.showConfirmationAndProceed(filterResult);
+			// Estimate token count
+			console.log('Estimating token count...');
+			const tokenEstimate: TokenEstimate = TokenEstimator.estimateTokens(filterResult.notes);
+			
+			// Check token limits and provide recommendations
+			const limitCheck = TokenEstimator.checkTokenLimits(tokenEstimate.totalTokens);
+			
+			// Estimate cost based on current model
+			const currentModel = this.openaiService?.getCurrentModel();
+			const costEstimate = TokenEstimator.estimateCost(tokenEstimate.totalTokens, currentModel);
+
+			// Show confirmation dialog with note count and token estimate
+			const confirmationData: ConfirmationData = {
+				filterResult,
+				tokenEstimate,
+				costEstimate,
+				limitCheck
+			};
+
+			const confirmationModal = new ConfirmationModal(
+				this.app,
+				confirmationData,
+				() => {
+					// User confirmed - proceed with summary generation
+					console.log('User confirmed summary generation');
+					this.proceedWithSummaryGeneration(filterResult, tokenEstimate);
+				},
+				() => {
+					// User cancelled
+					console.log('User cancelled summary generation');
+				}
+			);
+
+			confirmationModal.open();
 
 		} catch (error) {
 			console.error('Error processing date selection:', error);
 			new Notice(`Error processing date selection: ${error instanceof Error ? error.message : 'Unknown error'}`, 8000);
 		}
-	}
-
-	private async handleFolderSelection(folderResult: FolderPickerModalResult) {
-		console.log('Folder selected:', folderResult);
-		
-		try {
-			// Filter notes by folder
-			console.log('Filtering notes by folder...');
-			const filterResult: NoteFilterResult = await this.noteFilterService.filterNotesByFolder(
-				folderResult.folderPath,
-				folderResult.folderName
-			);
-			
-			if (filterResult.totalCount === 0) {
-				console.log('No notes found in the selected folder');
-				new Notice('No notes found in the selected folder', 5000);
-				return;
-			}
-
-			await this.showConfirmationAndProceed(filterResult);
-
-		} catch (error) {
-			console.error('Error processing folder selection:', error);
-			new Notice(`Error processing folder selection: ${error instanceof Error ? error.message : 'Unknown error'}`, 8000);
-		}
-	}
-
-	private async showConfirmationAndProceed(filterResult: NoteFilterResult) {
-		// Estimate token count
-		console.log('Estimating token count...');
-		const tokenEstimate: TokenEstimate = TokenEstimator.estimateTokens(filterResult.notes);
-		
-		// Check token limits and provide recommendations
-		const limitCheck = TokenEstimator.checkTokenLimits(tokenEstimate.totalTokens);
-		
-		// Estimate cost based on current model
-		const currentModel = this.openaiService?.getCurrentModel();
-		const costEstimate = TokenEstimator.estimateCost(tokenEstimate.totalTokens, currentModel);
-
-		// Show confirmation dialog with note count and token estimate
-		const confirmationData: ConfirmationData = {
-			filterResult,
-			tokenEstimate,
-			costEstimate,
-			limitCheck
-		};
-
-		const confirmationModal = new ConfirmationModal(
-			this.app,
-			confirmationData,
-			() => {
-				// User confirmed - proceed with summary generation
-				console.log('User confirmed summary generation');
-				this.proceedWithSummaryGeneration(filterResult, tokenEstimate);
-			},
-			() => {
-				// User cancelled
-				console.log('User cancelled summary generation');
-			}
-		);
-
-		confirmationModal.open();
 	}
 
 	private async proceedWithSummaryGeneration(filterResult: NoteFilterResult, tokenEstimate: TokenEstimate) {

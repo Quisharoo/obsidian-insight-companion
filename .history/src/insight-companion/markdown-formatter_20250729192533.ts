@@ -70,14 +70,10 @@ export class MarkdownFormatter {
 				sections.push(`**Folder Path:** \`${folderPath}\``);
 			}
 		} else {
-			// Date mode - ensure dateRange exists before accessing properties
-			if (dateRange) {
-				const startDate = config.dateFormat === 'iso' ? dateRange.startDate : this.formatDateForDisplay(dateRange.startDate);
-				const endDate = config.dateFormat === 'iso' ? dateRange.endDate : this.formatDateForDisplay(dateRange.endDate);
-				sections.push(`### 📅 Date Range: \`${startDate}\` to \`${endDate}\``);
-			} else {
-				sections.push(`### 📅 Date Range: _Not specified_`);
-			}
+			// Date mode
+			const startDate = config.dateFormat === 'iso' ? dateRange!.startDate : this.formatDateForDisplay(dateRange!.startDate);
+			const endDate = config.dateFormat === 'iso' ? dateRange!.endDate : this.formatDateForDisplay(dateRange!.endDate);
+			sections.push(`### 📅 Date Range: \`${startDate}\` to \`${endDate}\``);
 		}
 		
 		sections.push(`**Notes Analyzed:** ${notesAnalyzed}`);

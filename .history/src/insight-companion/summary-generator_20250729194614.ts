@@ -69,7 +69,7 @@ export class SummaryGenerator {
 		progressCallback?: ProgressCallback
 	): Promise<SummaryResult> {
 		const startTime = Date.now();
-		const { notes } = filterResult;
+		const { notes, dateRange } = filterResult;
 
 		try {
 			// Determine if chunking is needed
@@ -152,7 +152,7 @@ export class SummaryGenerator {
 			return {
 				content: finalSummary,
 				metadata: {
-					...(filterResult.mode === 'date' ? { dateRange: filterResult.dateRange } : {}),
+					...(filterResult.mode === 'date' ? { dateRange } : {}),
 					...(filterResult.mode === 'folder' ? { 
 						folderPath: filterResult.folderPath, 
 						folderName: filterResult.folderName 

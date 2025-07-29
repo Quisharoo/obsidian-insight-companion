@@ -166,11 +166,9 @@ export class ConfirmationModal extends Modal {
 		let sourceText: string;
 		if (filterResult.mode === 'folder') {
 			sourceText = `in folder: ${filterResult.folderName}${filterResult.folderPath ? ` (${filterResult.folderPath})` : ''}`;
-		} else if (filterResult.mode === 'date' && filterResult.dateRange) {
-			const dateRangeText = `${filterResult.dateRange.startDate} to ${filterResult.dateRange.endDate}`;
-			sourceText = `in the date range: ${dateRangeText}`;
 		} else {
-			sourceText = `in the selected collection`;
+			const dateRangeText = `${filterResult.dateRange!.startDate} to ${filterResult.dateRange!.endDate}`;
+			sourceText = `in the date range: ${dateRangeText}`;
 		}
 
 		notesSection.createEl('p', { 
