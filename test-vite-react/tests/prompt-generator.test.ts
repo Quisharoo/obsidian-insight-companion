@@ -235,10 +235,12 @@ describe('PromptGenerator', () => {
 				mockDateContext
 			);
 
-			expect(result.content).toContain('Freeform writing, no headings required');
+			expect(result.content).toContain('📋 OUTPUT INSTRUCTIONS:');
+			expect(result.content).toContain('Write in a freeform, natural voice');
+			expect(result.content).toContain('Do not require specific sections or headings');
 			expect(result.content).toContain('## Notes Referenced');
-			expect(result.content).toContain('[[Exact Note Title]]');
-			expect(result.content).toContain('Write what you\'d want to read in 3 months');
+			expect(result.content).toContain('[[Note Title]]: one-line observation, dry reaction, or quote');
+			expect(result.content).toContain('Write in freeform style and end with a "Notes Referenced" section');
 		});
 	});
 
@@ -288,13 +290,12 @@ describe('PromptGenerator', () => {
 		test('should include all required output format instructions', () => {
 			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext);
 
-					expect(result.content).toContain('Clean Markdown (no code fences)');
-		expect(result.content).toContain('[[Note Title]]');
-		expect(result.content).toContain('Use exact note titles for links');
-		expect(result.content).toContain('# Insight Summary');
-			expect(result.content).toContain('## Key Themes');
-			expect(result.content).toContain('## Important People');
-			expect(result.content).toContain('## Action Items & Next Steps');
+			expect(result.content).toContain('📋 OUTPUT INSTRUCTIONS:');
+			expect(result.content).toContain('Write in a freeform, natural voice');
+			expect(result.content).toContain('Use [[Note Title]] links for references (no .md)');
+			expect(result.content).toContain('Do not require specific sections or headings');
+			expect(result.content).toContain('## Notes Referenced');
+			expect(result.content).toContain('[[Note Title]]: one-line observation, dry reaction, or quote');
 		});
 
 		test('should provide clear analysis instructions', () => {
@@ -316,12 +317,13 @@ describe('PromptGenerator', () => {
 			expect(result.content).toContain('make sense based on what\'s written');
 		});
 
-		test('should emphasize Obsidian compatibility', () => {
+		test('should emphasize freeform writing style', () => {
 			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext);
 
-			expect(result.content).toContain('Obsidian compatibility');
-			expect(result.content).toContain('without .md extension');
-			expect(result.content).toContain('exact note titles');
+			expect(result.content).toContain('freeform, natural voice');
+			expect(result.content).toContain('patterns, contradictions, unresolved bits');
+			expect(result.content).toContain('Be observational, not summarizing each note');
+			expect(result.content).toContain('natural flow and grouping');
 		});
 	});
 
