@@ -359,14 +359,14 @@ The team has made concrete technical decisions including React for frontend deve
 			const saveCall = mockApp.vault.create.mock.calls[0];
 			const savedContent = saveCall[1];
 
-			expect(savedContent).toContain('# 🧠 Insight Summary');
-			expect(savedContent).toContain('📅 Date Range: `01-01-2024` to `01-31-2024`');
+			expect(savedContent).toContain('# Insight Summary Metadata');
+			expect(savedContent).toContain('**Date Range:** 2024-01-01 to 2024-01-31');
 			expect(savedContent).toContain('**Notes Analyzed:** 2');
-			expect(savedContent).toContain('- **Input Tokens:** 2,500');
-			expect(savedContent).toContain('- **Output Tokens:** 1,200');
-			expect(savedContent).toContain('- **Total Tokens:** 3,700');
-			expect(savedContent).toContain('**Model Used:** `gpt-4`');
-			expect(savedContent).toContain('- **Chunks Processed:** 1');
+			expect(savedContent).toContain('**Input Tokens:** 2,500');
+			expect(savedContent).toContain('**Output Tokens:** 1,200');
+			expect(savedContent).toContain('**Total Tokens:** 3,700');
+			expect(savedContent).toContain('**Model:** gpt-4');
+			expect(savedContent).toContain('**Chunks Processed:** 1');
 		});
 
 		test('should preserve Obsidian wiki links in summary', async () => {

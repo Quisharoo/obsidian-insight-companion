@@ -7,7 +7,6 @@ export interface FileServiceConfig {
 	includeTimestamp: boolean;
 	fileNameTemplate: string;
 	appendMode: boolean; // If true, append to existing file instead of creating new
-	formattingConfig?: Partial<FormattingConfig>; // Configuration for markdown formatting
 }
 
 export interface SaveResult {
@@ -126,14 +125,106 @@ export class FileService {
 	}
 
 	/**
-	 * Create the full file content using MarkdownFormatter
+	 * Create the full file content with metadata header and summary
 	 */
 	private createFileContent(summaryResult: SummaryResult): string {
-		// Use the MarkdownFormatter to create properly formatted content
-		return MarkdownFormatter.formatSummary(summaryResult, this.config.formattingConfig);
+		const { content, metadata } = summaryResult;
+		const { 
+			dateRange, 
+			notesAnalyzed, 
+			tokensUsed, 
+			chunksProcessed, 
+			generationTime, 
+			model 
+		} = metadata;
+
+		// Create metadata header
+		const metadataHeader = this.createMetadataHeader({
+			dateRange,
+			notesAnalyzed,
+			tokensUsed,
+			chunksProcessed,
+			generationTime,
+			model,
+			generatedAt: new Date().toISOString()
+		});
+
+		// Combine header and content
+		return `${metadataHeader}\n\n---\n\n${content}`;
 	}
 
+	/**
+	 * Create a formatted metadata header
+	 */
+	private createMetadataHeader(metadata: {
+		dateRange: { startDate: string; endDate: string };
+		notesAnalyzed: number;
+		tokensUsed: { prompt: number; completion: number; total: number };
+		chunksProcessed: number;
+		generationTime: number;
+		model: string;
+		generatedAt: string;
+	}): string {
+		const durationSeconds = (metadata.generationTime / 1000).toFixed(1);
+		const costEstimate = this.estimateActualCost(metadata.tokensUsed, metadata.model);
 
+		return `# Insight Summary Metadata
+
+**Date Range:** ${metadata.dateRange.startDate} to ${metadata.dateRange.endDate}
+**Notes Analyzed:** ${metadata.notesAnalyzed}
+**Generated:** ${new Date(metadata.generatedAt).toLocaleDateString()} ${new Date(metadata.generatedAt).toLocaleTimeString()}
+**Processing Time:** ${durationSeconds}s
+**Model:** ${metadata.model}
+
+## Token Usage
+- **Input Tokens:** ${metadata.tokensUsed.prompt.toLocaleString()}
+- **Output Tokens:** ${metadata.tokensUsed.completion.toLocaleString()}
+- **Total Tokens:** ${metadata.tokensUsed.total.toLocaleString()}
+- **Estimated Cost:** $${costEstimate.toFixed(4)}
+
+## Processing Details
+- **Chunks Processed:** ${metadata.chunksProcessed}
+- **Analysis Method:** ${metadata.chunksProcessed > 1 ? 'Multi-chunk with aggregation' : 'Single-pass analysis'}`;
+	}
+
+	/**
+	 * Estimate actual cost based on tokens used and model
+	 */
+	private estimateActualCost(tokensUsed: { prompt: number; completion: number; total: number }, model?: string): number {
+		// Determine pricing based on model
+		const isTurbo = model ? this.isTurboModel(model) : true; // Default to Turbo pricing
+		
+		let INPUT_COST_PER_1K: number;
+		let OUTPUT_COST_PER_1K: number;
+		
+		if (isTurbo) {
+			// GPT-4 Turbo pricing (as of 2024): $0.01 per 1K input tokens, $0.03 per 1K output tokens
+			INPUT_COST_PER_1K = 0.01;
+			OUTPUT_COST_PER_1K = 0.03;
+		} else {
+			// Legacy GPT-4 pricing: $0.03 per 1K input tokens, $0.06 per 1K output tokens  
+			INPUT_COST_PER_1K = 0.03;
+			OUTPUT_COST_PER_1K = 0.06;
+		}
+		
+		const inputCost = (tokensUsed.prompt / 1000) * INPUT_COST_PER_1K;
+		const outputCost = (tokensUsed.completion / 1000) * OUTPUT_COST_PER_1K;
+		
+		return inputCost + outputCost;
+	}
+
+	/**
+	 * Check if a model is a Turbo variant
+	 */
+	private isTurboModel(model: string): boolean {
+		const turboModels = [
+			'gpt-4-0125-preview',
+			'gpt-4-1106-preview', 
+			'gpt-4-turbo',
+			'gpt-4-turbo-preview'
+		];
+		return turboModels.includes(model) || model.includes('turbo');
+	}
 
 	/**
 	 * Save content to a file, handling existing files appropriately
