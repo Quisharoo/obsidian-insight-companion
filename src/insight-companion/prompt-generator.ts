@@ -208,14 +208,64 @@ When referencing notes in your analysis:
 			return '## Notes Referenced\n[No notes were analyzed]';
 		}
 
+		const wittyFallbacks = [
+			'exists but says nothing',
+			'definitely a note, probably',
+			'emotionally ambiguous',
+			'the strong silent type',
+			'speaks in riddles',
+			'minimalist to a fault',
+			'left us hanging',
+			'chose mystery over clarity',
+			'says everything by saying nothing',
+			'a zen master of note-taking'
+		];
+
 		const notesReferenced = notes
 			.map(note => {
 				const title = this.extractNoteTitle(note.file.path);
-				return `- [[${title}]]: included in analysis`;
+				
+				// Extract first non-empty line from content
+				const firstLine = this.extractFirstMeaningfulLine(note.content);
+				
+				let observation: string;
+				if (firstLine) {
+					// Truncate if too long (80 chars)
+					observation = firstLine.length > 80 
+						? firstLine.substring(0, 77) + '...'
+						: firstLine;
+				} else {
+					// Use random witty fallback
+					const randomIndex = Math.floor(Math.random() * wittyFallbacks.length);
+					observation = wittyFallbacks[randomIndex];
+				}
+				
+				return `- [[${title}]]: ${observation}`;
 			})
 			.join('\n');
 
 		return `## Notes Referenced\n${notesReferenced}`;
+	}
+
+	/**
+	 * Extract the first meaningful (non-empty, non-whitespace) line from note content
+	 */
+	private static extractFirstMeaningfulLine(content: string): string {
+		if (!content) return '';
+		
+		const lines = content.split('\n');
+		for (const line of lines) {
+			const trimmed = line.trim();
+			// Skip empty lines, markdown headers, and common frontmatter
+			if (trimmed && 
+				!trimmed.startsWith('#') && 
+				!trimmed.startsWith('---') &&
+				!trimmed.match(/^\w+:\s/)) { // Skip YAML frontmatter like "title: Something"
+				return trimmed;
+			}
+		}
+		
+		return '';
 	}
 
 	/**
