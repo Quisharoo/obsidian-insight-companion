@@ -108,7 +108,7 @@ export default class InsightCompanionPlugin extends Plugin {
 				return;
 			}
 
-			await this.showConfirmationAndProceed(filterResult);
+			await this.showConfirmationAndProceed(filterResult, dateRange.insightStyle);
 
 		} catch (error) {
 			console.error('Error processing date selection:', error);
@@ -133,7 +133,7 @@ export default class InsightCompanionPlugin extends Plugin {
 				return;
 			}
 
-			await this.showConfirmationAndProceed(filterResult);
+			await this.showConfirmationAndProceed(filterResult, folderResult.insightStyle);
 
 		} catch (error) {
 			console.error('Error processing folder selection:', error);
@@ -141,7 +141,7 @@ export default class InsightCompanionPlugin extends Plugin {
 		}
 	}
 
-	private async showConfirmationAndProceed(filterResult: NoteFilterResult) {
+	private async showConfirmationAndProceed(filterResult: NoteFilterResult, insightStyle?: 'structured' | 'freeform') {
 		// Estimate token count
 		console.log('Estimating token count...');
 		const tokenEstimate: TokenEstimate = TokenEstimator.estimateTokens(filterResult.notes);
@@ -167,7 +167,7 @@ export default class InsightCompanionPlugin extends Plugin {
 			() => {
 				// User confirmed - proceed with summary generation
 				console.log('User confirmed summary generation');
-				this.proceedWithSummaryGeneration(filterResult, tokenEstimate);
+				this.proceedWithSummaryGeneration(filterResult, tokenEstimate, insightStyle);
 			},
 			() => {
 				// User cancelled
@@ -178,7 +178,7 @@ export default class InsightCompanionPlugin extends Plugin {
 		confirmationModal.open();
 	}
 
-	private async proceedWithSummaryGeneration(filterResult: NoteFilterResult, tokenEstimate: TokenEstimate) {
+	private async proceedWithSummaryGeneration(filterResult: NoteFilterResult, tokenEstimate: TokenEstimate, insightStyle?: 'structured' | 'freeform') {
 		console.log('Proceeding with summary generation...');
 		console.log(`Processing ${filterResult.totalCount} notes with ${tokenEstimate.totalTokens} estimated tokens`);
 		
@@ -188,12 +188,18 @@ export default class InsightCompanionPlugin extends Plugin {
 			return;
 		}
 
+		// Create a new SummaryGenerator with the specific insightStyle config
+		const summaryConfig = {
+			promptConfig: { insightStyle }
+		};
+		const configuredSummaryGenerator = new SummaryGenerator(this.openaiService, summaryConfig);
+
 		// Show initial progress notification
 		let progressNotice: Notice | null = new Notice('🔄 Starting summary generation...', 0);
 
 		try {
 			// Generate the summary with progress tracking
-			const summaryResult = await this.summaryGenerator.generateSummary(
+			const summaryResult = await configuredSummaryGenerator.generateSummary(
 				filterResult, 
 				(progress: SummaryProgress) => {
 					this.updateProgressNotification(progressNotice, progress);
@@ -221,16 +227,14 @@ export default class InsightCompanionPlugin extends Plugin {
 			});
 
 		} catch (error) {
-			// Hide progress notification
+			// Dismiss progress notification on error
 			if (progressNotice) {
 				progressNotice.hide();
+				progressNotice = null;
 			}
 
-			const openaiError = error as OpenAIError;
-			console.error('Summary generation failed:', openaiError);
-			
-			// Show appropriate error message based on error type
-			this.handleSummaryGenerationError(openaiError);
+			console.error('Error generating summary:', error);
+			new Notice(`❌ Error generating summary: ${error instanceof Error ? error.message : 'Unknown error'}`, 10000);
 		}
 	}
 

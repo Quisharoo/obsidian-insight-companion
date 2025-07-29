@@ -90,6 +90,17 @@ export class Setting {
     callback(mockText);
     return this;
   }
+
+  addDropdown(callback: (dropdown: any) => void) {
+    const mockDropdown = {
+      selectEl: new MockHTMLSelectElement(),
+      addOption: jest.fn().mockReturnThis(),
+      setValue: jest.fn().mockReturnThis(),
+      onChange: jest.fn().mockReturnThis(),
+    };
+    callback(mockDropdown);
+    return this;
+  }
 }
 
 // Mock HTML elements for testing
@@ -133,6 +144,17 @@ class MockHTMLInputElement extends MockHTMLElement {
   type: string = 'text';
   value: string = '';
   placeholder: string = '';
+}
+
+class MockHTMLSelectElement extends MockHTMLElement {
+  type: string = 'select';
+  value: string = '';
+  options: Record<string, string> = {};
+
+  addOption(value: string, text: string) {
+    this.options[value] = text;
+    return this;
+  }
 }
 
 // Export additional mocks that might be needed

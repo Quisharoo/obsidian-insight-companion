@@ -3,10 +3,12 @@ import { App, Modal, Setting, TFolder } from 'obsidian';
 export interface FolderPickerModalResult {
 	folderPath: string;
 	folderName: string;
+	insightStyle?: 'structured' | 'freeform';
 }
 
 export class FolderPickerModal extends Modal {
 	private selectedFolder: string = '';
+	private insightStyle: 'structured' | 'freeform' = 'structured';
 	private onSubmit: (result: FolderPickerModalResult) => void;
 	private folderDropdown: HTMLSelectElement;
 	private submitButton: HTMLButtonElement;
@@ -47,6 +49,19 @@ export class FolderPickerModal extends Modal {
 				dropdown.onChange(value => {
 					this.selectedFolder = value;
 					this.validateSelection();
+				});
+			});
+
+		// Insight style setting
+		new Setting(contentEl)
+			.setName('Insight Style')
+			.setDesc('Choose the format for your insight summary')
+			.addDropdown(dropdown => {
+				dropdown.addOption('structured', 'Structured (Clear headings like Themes, People, Actions)');
+				dropdown.addOption('freeform', 'Freeform (Memo-style summary with natural flow, only required heading is Notes Referenced)');
+				dropdown.setValue(this.insightStyle);
+				dropdown.onChange(value => {
+					this.insightStyle = value as 'structured' | 'freeform';
 				});
 			});
 
@@ -168,7 +183,8 @@ export class FolderPickerModal extends Modal {
 
 		const result: FolderPickerModalResult = {
 			folderPath: this.selectedFolder,
-			folderName: folderName
+			folderName: folderName,
+			insightStyle: this.insightStyle
 		};
 
 		this.onSubmit(result);

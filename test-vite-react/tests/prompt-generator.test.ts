@@ -229,10 +229,15 @@ describe('PromptGenerator', () => {
 		});
 
 		test('should provide freeform writing instructions with note references', () => {
+			const config: Partial<PromptConfig> = {
+				insightStyle: 'freeform'
+			};
+
 			const result = PromptGenerator.combineSummariesPrompt(
 				mockChunkSummaries, 
 				10, 
-				mockDateContext
+				mockDateContext,
+				config
 			);
 
 			expect(result.content).toContain('📋 OUTPUT INSTRUCTIONS:');
@@ -290,12 +295,14 @@ describe('PromptGenerator', () => {
 		test('should include all required output format instructions', () => {
 			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext);
 
-			expect(result.content).toContain('📋 OUTPUT INSTRUCTIONS:');
-			expect(result.content).toContain('Write in a freeform, natural voice');
-			expect(result.content).toContain('Use [[Note Title]] links for references (no .md)');
-			expect(result.content).toContain('Do not require specific sections or headings');
+			// Default should be structured
+			expect(result.content).toContain('### 📋 CRITICAL OUTPUT REQUIREMENTS:');
+			expect(result.content).toContain('### 🧱 OUTPUT STRUCTURE:');
+			expect(result.content).toContain('# Insight Summary');
+			expect(result.content).toContain('## Key Themes');
+			expect(result.content).toContain('## Important People');
+			expect(result.content).toContain('## Action Items & Next Steps');
 			expect(result.content).toContain('## Notes Referenced');
-			expect(result.content).toContain('[[Note Title]]: one-line observation, dry reaction, or quote');
 		});
 
 		test('should provide clear analysis instructions', () => {
@@ -317,13 +324,13 @@ describe('PromptGenerator', () => {
 			expect(result.content).toContain('make sense based on what\'s written');
 		});
 
-		test('should emphasize freeform writing style', () => {
+		test('should use structured format by default', () => {
 			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext);
 
-			expect(result.content).toContain('freeform, natural voice');
-			expect(result.content).toContain('patterns, contradictions, unresolved bits');
-			expect(result.content).toContain('Be observational, not summarizing each note');
-			expect(result.content).toContain('natural flow and grouping');
+			expect(result.content).toContain('### 📋 CRITICAL OUTPUT REQUIREMENTS:');
+			expect(result.content).toContain('## Key Themes');
+			expect(result.content).toContain('## Important People');
+			expect(result.content).toContain('## Action Items & Next Steps');
 		});
 	});
 
@@ -356,6 +363,130 @@ describe('PromptGenerator', () => {
 			expect(result.estimatedTokens).toBeGreaterThan(100);
 			// Should not be unreasonably high for simple notes
 			expect(result.estimatedTokens).toBeLessThan(10000);
+		});
+	});
+
+	describe('insight style configuration', () => {
+		test('should generate structured format when insightStyle is structured', () => {
+			const config: Partial<PromptConfig> = {
+				insightStyle: 'structured'
+			};
+
+			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext, config);
+
+			expect(result.content).toContain('### 📋 CRITICAL OUTPUT REQUIREMENTS:');
+			expect(result.content).toContain('### 🧱 OUTPUT STRUCTURE:');
+			expect(result.content).toContain('# Insight Summary');
+			expect(result.content).toContain('## Key Themes');
+			expect(result.content).toContain('## Important People');
+			expect(result.content).toContain('## Action Items & Next Steps');
+			expect(result.content).toContain('## Notes Referenced');
+		});
+
+		test('should generate freeform format when insightStyle is freeform', () => {
+			const config: Partial<PromptConfig> = {
+				insightStyle: 'freeform'
+			};
+
+			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext, config);
+
+			expect(result.content).toContain('📋 OUTPUT INSTRUCTIONS:');
+			expect(result.content).toContain('Write in a freeform, natural voice');
+			expect(result.content).toContain('Do not require specific sections or headings');
+			expect(result.content).toContain('## Notes Referenced');
+			// Should NOT contain structured headings
+			expect(result.content).not.toContain('## Key Themes');
+			expect(result.content).not.toContain('## Important People');
+			expect(result.content).not.toContain('## Action Items & Next Steps');
+		});
+
+		test('should default to structured format when no insightStyle is specified', () => {
+			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext);
+
+			expect(result.content).toContain('### 📋 CRITICAL OUTPUT REQUIREMENTS:');
+			expect(result.content).toContain('## Key Themes');
+			expect(result.content).toContain('## Important People');
+			expect(result.content).toContain('## Action Items & Next Steps');
+		});
+
+		test('should include Notes Referenced section in both modes', () => {
+			const structuredResult = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext, { insightStyle: 'structured' });
+			const freeformResult = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext, { insightStyle: 'freeform' });
+
+			expect(structuredResult.content).toContain('## Notes Referenced');
+			expect(freeformResult.content).toContain('## Notes Referenced');
+			expect(structuredResult.content).toContain('[[Note Title]]: one-line observation, dry reaction, or quote');
+			expect(freeformResult.content).toContain('[[Note Title]]: one-line observation, dry reaction, or quote');
+		});
+	});
+
+	describe('combineSummariesPrompt with insight styles', () => {
+		const mockChunkSummaries = [
+			'Summary 1 content',
+			'Summary 2 content'
+		];
+
+		test('should respect structured style in combineSummariesPrompt', () => {
+			const config: Partial<PromptConfig> = {
+				insightStyle: 'structured'
+			};
+
+			const result = PromptGenerator.combineSummariesPrompt(
+				mockChunkSummaries, 
+				10, 
+				mockDateContext,
+				config
+			);
+
+			expect(result.content).toContain('### 📋 CRITICAL OUTPUT REQUIREMENTS:');
+			expect(result.content).toContain('### 🧱 OUTPUT STRUCTURE:');
+			expect(result.content).toContain('# Insight Summary');
+			expect(result.content).toContain('## Key Themes');
+			expect(result.content).toContain('Follow the structured format with clear headings');
+		});
+
+		test('should respect freeform style in combineSummariesPrompt', () => {
+			const config: Partial<PromptConfig> = {
+				insightStyle: 'freeform'
+			};
+
+			const result = PromptGenerator.combineSummariesPrompt(
+				mockChunkSummaries, 
+				10, 
+				mockDateContext,
+				config
+			);
+
+			expect(result.content).toContain('📋 OUTPUT INSTRUCTIONS:');
+			expect(result.content).toContain('Write in a freeform, natural voice');
+			expect(result.content).toContain('Write in freeform style and end with a "Notes Referenced" section');
+			// Should NOT contain structured headings
+			expect(result.content).not.toContain('## Key Themes');
+			expect(result.content).not.toContain('## Important People');
+		});
+
+		test('should default to structured in combineSummariesPrompt when no config provided', () => {
+			const result = PromptGenerator.combineSummariesPrompt(
+				mockChunkSummaries, 
+				10, 
+				mockDateContext
+			);
+
+			expect(result.content).toContain('### 📋 CRITICAL OUTPUT REQUIREMENTS:');
+			expect(result.content).toContain('## Key Themes');
+		});
+
+		test('should use structured format by default in combineSummariesPrompt', () => {
+			const result = PromptGenerator.combineSummariesPrompt(
+				mockChunkSummaries, 
+				10, 
+				mockDateContext
+			);
+
+			expect(result.content).toContain('### 📋 CRITICAL OUTPUT REQUIREMENTS:');
+			expect(result.content).toContain('## Key Themes');
+			expect(result.content).toContain('## Notes Referenced');
+			expect(result.content).toContain('Follow the structured format with clear headings');
 		});
 	});
 }); 

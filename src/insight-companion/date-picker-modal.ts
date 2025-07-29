@@ -3,11 +3,13 @@ import { App, Modal, Setting } from 'obsidian';
 export interface DateRange {
 	startDate: string;
 	endDate: string;
+	insightStyle?: 'structured' | 'freeform';
 }
 
 export class DatePickerModal extends Modal {
 	private startDate: string;
 	private endDate: string;
+	private insightStyle: 'structured' | 'freeform' = 'structured';
 	private onSubmit: (dateRange: DateRange) => void;
 	private startDateInput: HTMLInputElement;
 	private endDateInput: HTMLInputElement;
@@ -23,6 +25,7 @@ export class DatePickerModal extends Modal {
 		
 		this.startDate = defaultDateRange?.startDate || this.formatDate(thirtyDaysAgo);
 		this.endDate = defaultDateRange?.endDate || this.formatDate(today);
+		this.insightStyle = defaultDateRange?.insightStyle || 'structured';
 		this.onSubmit = onSubmit;
 	}
 
@@ -57,6 +60,19 @@ export class DatePickerModal extends Modal {
 				text.onChange(value => {
 					this.endDate = value;
 					this.validateDates();
+				});
+			});
+
+		// Insight style setting
+		new Setting(contentEl)
+			.setName('Insight Style')
+			.setDesc('Choose the format for your insight summary')
+			.addDropdown(dropdown => {
+				dropdown.addOption('structured', 'Structured (Clear headings like Themes, People, Actions)');
+				dropdown.addOption('freeform', 'Freeform (Memo-style summary with natural flow, only required heading is Notes Referenced)');
+				dropdown.setValue(this.insightStyle);
+				dropdown.onChange(value => {
+					this.insightStyle = value as 'structured' | 'freeform';
 				});
 			});
 
@@ -105,7 +121,8 @@ export class DatePickerModal extends Modal {
 			if (this.validateDates()) {
 				this.onSubmit({
 					startDate: this.startDate,
-					endDate: this.endDate
+					endDate: this.endDate,
+					insightStyle: this.insightStyle
 				});
 				this.close();
 			}

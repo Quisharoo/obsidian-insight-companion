@@ -315,7 +315,8 @@ export class SummaryGenerator {
 		const prompt = PromptGenerator.combineSummariesPrompt(
 			chunkSummaries, 
 			totalNoteCount, 
-			context
+			context,
+			this.config.promptConfig
 		);
 
 		return await this.executeWithRetry(prompt.content);

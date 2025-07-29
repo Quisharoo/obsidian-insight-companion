@@ -5,6 +5,7 @@ export interface PromptConfig {
 	includeMetadata: boolean;
 	maxNotePreview: number;
 	focusAreas?: string[];
+	insightStyle?: 'structured' | 'freeform';
 }
 
 export interface GeneratedPrompt {
@@ -17,7 +18,8 @@ export class PromptGenerator {
 	private static readonly DEFAULT_CONFIG: PromptConfig = {
 		includeMetadata: true,
 		maxNotePreview: 500, // Max characters per note preview
-		focusAreas: []
+		focusAreas: [],
+		insightStyle: 'structured'
 	};
 
 	/**
@@ -47,7 +49,7 @@ export class PromptGenerator {
 	 * Build the system prompt that defines the AI's role and output format
 	 */
 	private static buildSystemPrompt(config: PromptConfig): string {
-		return `You're the person who reads everything — not to be helpful, but because you're genuinely curious. You notice patterns. You spot what keeps showing up, what feels unresolved, and what the writer might be circling without fully saying.
+		const basePersonality = `You're the person who reads everything — not to be helpful, but because you're genuinely curious. You notice patterns. You spot what keeps showing up, what feels unresolved, and what the writer might be circling without fully saying.
 
 You're not here to conclude. You're here to make the mess more visible. If something's vague, let it be vague. If something's weird, say that. You don't need to explain it — just notice it.
 
@@ -67,7 +69,10 @@ Instead of:
 Say:
 > "Leavers keeps showing up — not in a haunting way, but definitely enough to suggest you're still untangling parts of it."
 
----
+---`;
+
+		if (config.insightStyle === 'freeform') {
+			return `${basePersonality}
 
 📋 OUTPUT INSTRUCTIONS:
 - Write in a freeform, natural voice
@@ -81,6 +86,35 @@ Say:
 ## Notes Referenced
 - [[Note Title]]: one-line observation, dry reaction, or quote
 - [[Another Note]]: what stood out or felt odd`;
+		} else {
+			// Structured format (default)
+			return `${basePersonality}
+
+### 📋 CRITICAL OUTPUT REQUIREMENTS:
+- Clean Markdown (no code fences)
+- Use Obsidian wiki link format [[Note Title]] (no .md extension)
+- Use exact note titles for links
+- Use clear headings and bullet points
+- Group insights by theme — don't summarize note-by-note
+- Focus on what *shows up repeatedly*, not what sounds important
+- Avoid corporate language ("strategic focus", "key priority", "driving impact")
+
+### 🧱 OUTPUT STRUCTURE:
+# Insight Summary
+
+## Key Themes
+[What keeps surfacing across notes? Be casual but clear. Don't overstate.]
+
+## Important People
+[Who shows up, and in what kind of context? Don't assign roles beyond what's said.]
+
+## Action Items & Next Steps
+[What feels open, hanging, or waiting? Don't invent tasks — just point at loose ends.]
+
+## Notes Referenced
+- [[Note Title]]: one-line observation, dry reaction, or quote
+- [[Another Note]]: what stood out or felt odd`;
+		}
 	}
 
 	/**
@@ -223,13 +257,20 @@ What's worth noticing? What stands out? Who keeps showing up? What feels unfinis
 	static combineSummariesPrompt(
 		chunkSummaries: string[], 
 		totalNoteCount: number, 
-		context: { dateRange?: DateRange; folderName?: string; folderPath?: string; mode: 'date' | 'folder' }
+		context: { dateRange?: DateRange; folderName?: string; folderPath?: string; mode: 'date' | 'folder' },
+		config: Partial<PromptConfig> = {}
 	): GeneratedPrompt {
-		const systemPrompt = `You're the person who reads everything — not to be helpful, but because you're genuinely curious. You notice patterns. You spot what keeps showing up, what feels unresolved, and what the writer might be circling without fully saying.
+		const finalConfig = { ...this.DEFAULT_CONFIG, ...config };
+		
+		const basePersonality = `You're the person who reads everything — not to be helpful, but because you're genuinely curious. You notice patterns. You spot what keeps showing up, what feels unresolved, and what the writer might be circling without fully saying.
 
 You're not here to conclude. You're here to make the mess more visible. If something's vague, let it be vague. If something's weird, say that. You don't need to explain it — just notice it.
 
-You're allowed to be dry. Observational. Even funny — in that "I've seen this before" kind of way. Ask questions if they help. Shrug when it's ambiguous. But keep it useful.
+You're allowed to be dry. Observational. Even funny — in that "I've seen this before" kind of way. Ask questions if they help. Shrug when it's ambiguous. But keep it useful.`;
+
+		let systemPrompt: string;
+		if (finalConfig.insightStyle === 'freeform') {
+			systemPrompt = `${basePersonality}
 
 📋 OUTPUT INSTRUCTIONS:
 - Write in a freeform, natural voice
@@ -243,6 +284,35 @@ You're allowed to be dry. Observational. Even funny — in that "I've seen this 
 ## Notes Referenced
 - [[Note Title]]: one-line observation, dry reaction, or quote
 - [[Another Note]]: what stood out or felt odd`;
+		} else {
+			// Structured format (default)
+			systemPrompt = `${basePersonality}
+
+### 📋 CRITICAL OUTPUT REQUIREMENTS:
+- Clean Markdown (no code fences)
+- Use Obsidian wiki link format [[Note Title]] (no .md extension)
+- Use exact note titles for links
+- Use clear headings and bullet points
+- Group insights by theme — don't summarize note-by-note
+- Focus on what *shows up repeatedly*, not what sounds important
+- Avoid corporate language ("strategic focus", "key priority", "driving impact")
+
+### 🧱 OUTPUT STRUCTURE:
+# Insight Summary
+
+## Key Themes
+[What keeps surfacing across notes? Be casual but clear. Don't overstate.]
+
+## Important People
+[Who shows up, and in what kind of context? Don't assign roles beyond what's said.]
+
+## Action Items & Next Steps
+[What feels open, hanging, or waiting? Don't invent tasks — just point at loose ends.]
+
+## Notes Referenced
+- [[Note Title]]: one-line observation, dry reaction, or quote
+- [[Another Note]]: what stood out or felt odd`;
+		}
 
 		const summariesContent = chunkSummaries
 			.map((summary, index) => `--- CHUNK ${index + 1} SUMMARY ---\n${summary}`)
@@ -264,7 +334,10 @@ What genuinely shows up across chunks? Where do things connect — or contradict
 
 Don't force connections. Don't be polite. Write something you'd want to read in 3 months to remember what was going on.
 
-Write in freeform style and end with a "Notes Referenced" section listing all the notes that were analyzed.`;
+${finalConfig.insightStyle === 'freeform' 
+	? 'Write in freeform style and end with a "Notes Referenced" section listing all the notes that were analyzed.'
+	: 'Follow the structured format with clear headings and end with a "Notes Referenced" section listing all the notes that were analyzed.'
+}`;
 
 		const fullPrompt = `${systemPrompt}\n\n${summariesContent}\n\n${instructionPrompt}`;
 		
