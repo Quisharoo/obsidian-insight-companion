@@ -145,7 +145,7 @@ describe('PromptGenerator', () => {
 
 			expect(result.noteCount).toBe(1);
 			expect(result.content).toContain('chunk 1 of 3');
-			expect(result.content).toContain('woven together with other chunks');
+			expect(result.content).toContain('partial analysis');
 		});
 
 		test('should include chunk context', () => {

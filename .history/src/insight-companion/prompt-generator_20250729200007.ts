@@ -195,15 +195,15 @@ OUTPUT REQUIREMENTS:
 			contextDescription = `from the selected collection`;
 		}
 
-		const instructionPrompt = `Look through these ${notes.length} notes ${contextDescription} (chunk ${chunkIndex + 1} of ${totalChunks}).
+		const instructionPrompt = `Analyze this chunk of ${notes.length} notes ${contextDescription} (part ${chunkIndex + 1} of ${totalChunks} total chunks).
 
-What's in here:
-1. Themes that keep coming up
-2. People who show up
-3. Things that seem unfinished or waiting
-4. Anything that feels connected or worth noting
+Provide:
+1. Key themes in this chunk
+2. Important people mentioned
+3. Action items identified
+4. Notable insights or patterns
 
-Keep it focused — this gets woven together with other chunks later.`;
+Keep responses focused and actionable. This will be combined with other chunk analyses.`;
 
 		const fullPrompt = `${systemPrompt}\n\n${notesContent}\n\n${instructionPrompt}`;
 		
