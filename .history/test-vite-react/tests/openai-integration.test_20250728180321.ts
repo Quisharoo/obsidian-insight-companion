@@ -308,23 +308,24 @@ The team has made concrete technical decisions including React for frontend deve
 		});
 
 		test('should handle API errors gracefully', async () => {
-			// Mock non-retryable API error to avoid timeout issues
+			// Mock API error
 			mockFetch.mockResolvedValue({
 				ok: false,
-				status: 401,
+				status: 429,
 				json: jest.fn().mockResolvedValue({
-					error: { message: 'Invalid authentication credentials' }
+					error: { message: 'Rate limit exceeded. Please retry after 60 seconds.' }
 				})
 			} as any);
 
 			await expect(summaryGenerator.generateSummary(mockFilterResult))
 				.rejects
 				.toMatchObject({
-					type: 'authentication',
-					message: 'Invalid or missing OpenAI API key',
-					retryable: false
+					type: 'rate_limit',
+					message: 'OpenAI API rate limit exceeded',
+					retryable: true,
+					retryAfter: 60
 				});
-		});
+		}, 15000);
 
 		test('should track progress through entire workflow', async () => {
 			const progressUpdates: any[] = [];

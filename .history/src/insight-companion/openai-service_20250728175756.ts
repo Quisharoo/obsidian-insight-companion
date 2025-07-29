@@ -83,10 +83,7 @@ export class OpenAIService {
 		if (!response.ok) {
 			const errorMessage = responseData.error?.message || 'Unknown error';
 			// Include status code for better error categorization
-			const error = new Error(`HTTP ${response.status}: ${errorMessage}`);
-			(error as any).status = response.status;
-			(error as any).responseData = responseData;
-			throw error;
+			throw new Error(`HTTP ${response.status}: ${errorMessage}`, { cause: { status: response.status, responseData } });
 		}
 
 		return responseData;
@@ -121,14 +118,13 @@ export class OpenAIService {
 	 */
 	private handleError(error: any): OpenAIError {
 		const message = error.message || 'Unknown error occurred';
-		const status = error.status;
 
-		// Check HTTP status codes first for more reliable categorization
-		if (status === 401 || message.includes('authentication') || message.includes('Invalid authentication')) {
+		// Check for specific OpenAI error patterns first
+		if (message.includes('authentication') || message.includes('Invalid authentication') || message.includes('401')) {
 			return this.createError('authentication', 'Invalid or missing OpenAI API key');
 		}
 
-		if (status === 429 || message.includes('rate limit')) {
+		if (message.includes('rate limit') || message.includes('429')) {
 			const retryAfter = this.extractRetryAfter(message);
 			return this.createError('rate_limit', 'OpenAI API rate limit exceeded', true, retryAfter);
 		}
@@ -152,7 +148,7 @@ export class OpenAIService {
 		}
 
 		// HTTP server errors
-		if (status >= 500 || message.includes('HTTP 5')) {
+		if (message.includes('HTTP 5')) {
 			return this.createError('network', 'OpenAI API server error', true);
 		}
 

@@ -308,21 +308,22 @@ The team has made concrete technical decisions including React for frontend deve
 		});
 
 		test('should handle API errors gracefully', async () => {
-			// Mock non-retryable API error to avoid timeout issues
+			// Mock API error
 			mockFetch.mockResolvedValue({
 				ok: false,
-				status: 401,
+				status: 429,
 				json: jest.fn().mockResolvedValue({
-					error: { message: 'Invalid authentication credentials' }
+					error: { message: 'Rate limit exceeded. Please retry after 60 seconds.' }
 				})
 			} as any);
 
 			await expect(summaryGenerator.generateSummary(mockFilterResult))
 				.rejects
 				.toMatchObject({
-					type: 'authentication',
-					message: 'Invalid or missing OpenAI API key',
-					retryable: false
+					type: 'rate_limit',
+					message: 'OpenAI API rate limit exceeded',
+					retryable: true,
+					retryAfter: 60
 				});
 		});
 
@@ -426,7 +427,7 @@ The team has made concrete technical decisions including React for frontend deve
 
 		test('should handle network timeouts gracefully', async () => {
 			// Mock network timeout
-			mockFetch.mockRejectedValue(new TypeError('fetch failed'));
+			mockFetch.mockRejectedValue(new TypeError('Network timeout'));
 
 			await expect(summaryGenerator.generateSummary(mockFilterResult))
 				.rejects
@@ -448,11 +449,9 @@ The team has made concrete technical decisions including React for frontend deve
 			const summaryResult = await summaryGenerator.generateSummary(mockFilterResult);
 			const actualTokens = summaryResult.metadata.tokensUsed.total;
 			
-			// Estimates are rough and API response has higher token count in our mock
-			// Just validate both are reasonable numbers
-			expect(actualTokens).toBeGreaterThan(1000);
-			expect(actualTokens).toBeLessThan(10000);
-			expect(prompt.estimatedTokens).toBeGreaterThan(100);
+			// Estimate should be within 50% of actual (estimates are rough)
+			expect(actualTokens).toBeGreaterThan(prompt.estimatedTokens * 0.5);
+			expect(actualTokens).toBeLessThan(prompt.estimatedTokens * 2);
 		});
 	});
 }); 

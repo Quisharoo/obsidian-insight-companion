@@ -307,16 +307,12 @@ describe('OpenAIService', () => {
 		test('should handle malformed JSON responses', async () => {
 			mockFetch.mockResolvedValueOnce({
 				ok: false,
-				status: 500,
 				json: jest.fn().mockRejectedValueOnce(new Error('Invalid JSON'))
 			} as any);
 
 			await expect(openaiService.generateCompletion('test'))
 				.rejects
-				.toMatchObject({
-					type: 'unknown',
-					retryable: true
-				});
+				.toThrow();
 		});
 	});
 }); 

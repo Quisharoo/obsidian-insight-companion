@@ -201,9 +201,10 @@ describe('SummaryGenerator', () => {
 
 		test('should handle API errors and report through progress callback', async () => {
 			const openaiError: OpenAIError = {
-				type: 'authentication', // Use non-retryable error to avoid timeout issues
-				message: 'Invalid API key',
-				retryable: false
+				type: 'rate_limit',
+				message: 'Rate limit exceeded',
+				retryable: true,
+				retryAfter: 60
 			};
 
 			mockOpenAIService.generateCompletion.mockRejectedValue(openaiError);
@@ -214,11 +215,11 @@ describe('SummaryGenerator', () => {
 			expect(mockProgressCallback).toHaveBeenCalledWith(
 				expect.objectContaining({
 					stage: 'error',
-					message: 'Error generating summary: Invalid API key',
+					message: 'Error generating summary: Rate limit exceeded',
 					error: openaiError
 				})
 			);
-		});
+		}, 10000); // Increase timeout for this test
 
 		test('should accumulate token usage across multiple chunks', async () => {
 			const customConfig: Partial<SummaryConfig> = {

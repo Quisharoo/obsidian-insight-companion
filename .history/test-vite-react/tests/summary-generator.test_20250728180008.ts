@@ -201,9 +201,10 @@ describe('SummaryGenerator', () => {
 
 		test('should handle API errors and report through progress callback', async () => {
 			const openaiError: OpenAIError = {
-				type: 'authentication', // Use non-retryable error to avoid timeout issues
-				message: 'Invalid API key',
-				retryable: false
+				type: 'rate_limit',
+				message: 'Rate limit exceeded',
+				retryable: true,
+				retryAfter: 60
 			};
 
 			mockOpenAIService.generateCompletion.mockRejectedValue(openaiError);
@@ -214,7 +215,7 @@ describe('SummaryGenerator', () => {
 			expect(mockProgressCallback).toHaveBeenCalledWith(
 				expect.objectContaining({
 					stage: 'error',
-					message: 'Error generating summary: Invalid API key',
+					message: 'Error generating summary: Rate limit exceeded',
 					error: openaiError
 				})
 			);
@@ -249,13 +250,13 @@ describe('SummaryGenerator', () => {
 				.mockResolvedValueOnce(chunkResponse2)
 				.mockResolvedValueOnce(combinedResponse);
 
-			const result = await customGenerator.generateSummary(mockFilterResult, mockProgressCallback);
+			const result = await summaryGenerator.generateSummary(mockFilterResult, mockProgressCallback);
 
-			// Verify tokens are accumulated correctly
-			expect(result.metadata.tokensUsed.prompt).toBeGreaterThan(1000);
-			expect(result.metadata.tokensUsed.completion).toBeGreaterThan(600);
-			expect(result.metadata.tokensUsed.total).toBeGreaterThan(2000);
-			expect(result.metadata.chunksProcessed).toBe(2); // 2 notes with chunk size 1 = 2 chunks
+			expect(result.metadata.tokensUsed).toEqual({
+				prompt: 1500, // 500 + 600 + 400
+				completion: 750, // 200 + 300 + 250
+				total: 2250 // 700 + 900 + 650
+			});
 		});
 
 		test('should measure generation time', async () => {
@@ -288,9 +289,9 @@ describe('SummaryGenerator', () => {
 		});
 
 		test('should identify when chunking is required due to token limits', () => {
-			const largeNotes: FilteredNote[] = Array.from({ length: 15 }, (_, i) => ({
+			const largeNotes: FilteredNote[] = Array.from({ length: 5 }, (_, i) => ({
 				file: { path: `Note ${i + 1}.md` } as any,
-				content: 'A'.repeat(10000), // Large content to trigger token limits
+				content: 'A'.repeat(50000), // Very large content
 				createdTime: Date.now(),
 				modifiedTime: Date.now()
 			}));
@@ -298,7 +299,7 @@ describe('SummaryGenerator', () => {
 			const estimation = SummaryGenerator.estimateChunking(largeNotes);
 
 			expect(estimation.requiresChunking).toBe(true);
-			expect(estimation.tokenEstimate).toBeGreaterThan(10000);
+			expect(estimation.tokenEstimate).toBeGreaterThan(100000);
 		});
 
 		test('should handle empty notes array', () => {
@@ -425,7 +426,7 @@ describe('SummaryGenerator', () => {
 			const result = await summaryGenerator.generateSummary(emptyFilterResult, mockProgressCallback);
 
 			expect(result.metadata.notesAnalyzed).toBe(0);
-			expect(result.metadata.chunksProcessed).toBe(1); // Single empty chunk processed
+			expect(result.metadata.chunksProcessed).toBe(1);
 		});
 
 		test('should handle single note', async () => {

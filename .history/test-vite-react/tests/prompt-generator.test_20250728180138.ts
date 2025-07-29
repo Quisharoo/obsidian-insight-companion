@@ -271,10 +271,10 @@ describe('PromptGenerator', () => {
 		test('should include all required output format instructions', () => {
 			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateRange);
 
-					expect(result.content).toContain('clean Markdown without code block fences');
-		expect(result.content).toContain('[[Note Title]]');
-		expect(result.content).toContain('clickable'); // The word "clickable" appears in instructions
-		expect(result.content).toContain('# Insight Summary');
+			expect(result.content).toContain('clean Markdown without code block fences');
+			expect(result.content).toContain('[[Note Title]]');
+			expect(result.content).toContain('clickable wiki links');
+			expect(result.content).toContain('# Insight Summary');
 			expect(result.content).toContain('## Key Themes');
 			expect(result.content).toContain('## Important People');
 			expect(result.content).toContain('## Action Items & Next Steps');
