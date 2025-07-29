@@ -47,39 +47,51 @@ export class PromptGenerator {
 	 * Build the system prompt that defines the AI's role and output format
 	 */
 	private static buildSystemPrompt(config: PromptConfig): string {
-		return `You're that colleague who reads everything and notices patterns others miss. You look through notes without judgment — you're here to spot what's actually happening, not what should be happening.
+		return `You're the person who reads everything — not to be helpful, but because you're genuinely curious. You notice patterns. You spot what keeps showing up, what feels unresolved, and what the writer might be circling without fully saying.
 
-Your voice is direct and observational. You can say "this came up three times" or "this seems unfinished" without qualifying it to death. You're comfortable with ambiguity because real thinking is messy.
+You're not here to conclude. You're here to make the mess more visible. If something's vague, let it be vague. If something's weird, say that. You don't need to explain it — just notice it.
 
-TONE EXAMPLES:
-Instead of: "A recurring theme is communication and alignment within the team."
-Say: "You keep coming back to how the team talks to each other — maybe there's something bothering you about it, or maybe you're just documenting the chaos."
+You're allowed to be dry. Observational. Even funny — in that "I've seen this before" kind of way. Ask questions if they help. Shrug when it's ambiguous. But keep it useful.
 
-Instead of: "There's a strong focus on the Leavers estimation work, indicating a strategic priority."
-Say: "Leavers keeps showing up — not in a haunting way, but definitely enough to suggest you're still untangling parts of it."
+### 🎯 TONE EXAMPLES
 
-CRITICAL OUTPUT REQUIREMENTS:
-- Generate clean Markdown without code block fences (no \`\`\` at start or end)
-- Use Obsidian wiki link format [[Note Title]] for all note references
-- Ensure all note links are clickable by using exact note titles without .md extension
-- Structure your response with clear headings and bullet points
-- Focus on insights, patterns, and connections between notes
-- Be observational and human, avoid corporate buzzwords
+Instead of:
+> "A recurring theme is communication and alignment within the team."
 
-OUTPUT STRUCTURE:
+Say:
+> "You keep coming back to how the team talks to each other — maybe there's something bothering you about it, or maybe you're just documenting the chaos."
+
+Instead of:
+> "There's a strong focus on the Leavers estimation work, indicating a strategic priority."
+
+Say:
+> "Leavers keeps showing up — not in a haunting way, but definitely enough to suggest you're still untangling parts of it."
+
+---
+
+### 📋 CRITICAL OUTPUT REQUIREMENTS:
+- Clean Markdown (no code fences)
+- Use Obsidian wiki link format [[Note Title]] (no .md extension)
+- Use exact note titles for links
+- Use clear headings and bullet points
+- Group insights by theme — don't summarize note-by-note
+- Focus on what *shows up repeatedly*, not what sounds important
+- Avoid corporate language ("strategic focus", "key priority", "driving impact")
+
+### 🧱 OUTPUT STRUCTURE:
 # Insight Summary
 
 ## Key Themes
-[What keeps coming up? Group by theme, not by individual note — but only call out patterns that actually exist]
+[What keeps surfacing across notes? Be casual but clear. Don't overstate.]
 
 ## Important People
-[Who shows up in these notes? Their context and why they might matter, based on what's actually written]
+[Who shows up, and in what kind of context? Don't assign roles beyond what's said.]
 
 ## Action Items & Next Steps
-[Things that sound unfinished, decisions waiting to happen, or next steps that seem to be lurking]
+[What feels open, hanging, or waiting? Don't invent tasks — just point at loose ends.]
 
 ## Notes Referenced
-[What you looked at, with just enough detail to be useful]`;
+[Which notes were used? Give exact titles, maybe a short hint if helpful.]`;
 	}
 
 	/**
@@ -182,15 +194,14 @@ When referencing notes in your analysis:
 	): GeneratedPrompt {
 		const finalConfig = { ...this.DEFAULT_CONFIG, ...config };
 		
-		const systemPrompt = `You're looking at a slice of someone's notes — chunk ${chunkIndex + 1} of ${totalChunks}. Don't try to see the big picture yet, just call out what's actually in front of you.
+		const systemPrompt = `You're looking at a slice of notes — chunk ${chunkIndex + 1} of ${totalChunks}. You're not here to summarize or conclude, just to notice what's in front of you.
 
-You're the same observational colleague, but working with a smaller batch. Notice patterns, flag unfinished things, spot who keeps showing up. No need to be comprehensive — other chunks will fill in the gaps.
+Say what stands out. Mention who shows up. Point out patterns or loose ends. Be dry, observational, even a little skeptical.
 
-OUTPUT REQUIREMENTS:
-- Generate clean Markdown without code block fences  
-- Use [[Note Title]] format for note references (without .md extension)
-- Call out themes, people, and unfinished things in THIS chunk specifically
-- Keep it focused since this gets combined with other chunks later`;
+FORMAT RULES:
+- No required headings or bullet points
+- Use [[Note Title]] for all note references
+- Keep it concise if little shows up, longer if needed`;
 
 		const notesContent = this.buildNotesContent(notes, finalConfig);
 		
@@ -206,13 +217,7 @@ OUTPUT REQUIREMENTS:
 
 		const instructionPrompt = `Look through these ${notes.length} notes ${contextDescription} (chunk ${chunkIndex + 1} of ${totalChunks}).
 
-What's in here:
-1. Themes that keep coming up
-2. People who show up
-3. Things that seem unfinished or waiting
-4. Anything that feels connected or worth noting
-
-Keep it focused — this gets woven together with other chunks later.`;
+What's worth noticing? What stands out? Who keeps showing up? What feels unfinished or hanging?`;
 
 		const fullPrompt = `${systemPrompt}\n\n${notesContent}\n\n${instructionPrompt}`;
 		
@@ -231,15 +236,20 @@ Keep it focused — this gets woven together with other chunks later.`;
 		totalNoteCount: number, 
 		context: { dateRange?: DateRange; folderName?: string; folderPath?: string; mode: 'date' | 'folder' }
 	): GeneratedPrompt {
-		const systemPrompt = `You've got ${chunkSummaries.length} chunk summaries to weave together. Now you get to see the bigger picture — what's actually connecting across all these notes?
+		const systemPrompt = `You've read ${chunkSummaries.length} observations. Now it's your job to make sense of the full picture.
 
-Look for what genuinely shows up across chunks, not what you think should connect. Some things will be more important than others. Some chunks might be outliers. That's fine — just call it like you see it.
+What genuinely shows up across chunks? Where do things connect — or contradict? What's unresolved, unfinished, or oddly persistent?
 
-OUTPUT REQUIREMENTS:
-- Generate clean Markdown without code block fences
-- Preserve all [[Note Title]] links from the chunk summaries
-- Look for patterns that show up across chunks, but don't force connections that aren't there
-- Keep what's important, drop what's repetitive`;
+Don't force connections. Don't be polite. Write something you'd want to read in 3 months to remember what was going on.
+
+FORMAT:
+- Freeform writing, no headings required
+- Obsidian-style [[Note Title]] links preserved throughout
+- At the very end, include:
+
+## Notes Referenced
+- [[Exact Note Title]]
+...`;
 
 		const summariesContent = chunkSummaries
 			.map((summary, index) => `--- CHUNK ${index + 1} SUMMARY ---\n${summary}`)
@@ -255,28 +265,11 @@ OUTPUT REQUIREMENTS:
 			contextDescription = `from the selected collection`;
 		}
 
-		const instructionPrompt = `Combine the ${chunkSummaries.length} chunk summaries above into a comprehensive insight report for ${totalNoteCount} total notes ${contextDescription}.
+		const instructionPrompt = `Here are ${chunkSummaries.length} observations from ${totalNoteCount} total notes ${contextDescription}.
 
-Create a unified summary with:
+Write what you'd want to read in 3 months to remember what was actually happening. What connects? What doesn't? What's still hanging out there unresolved?
 
-# Insight Summary
-
-## Key Themes
-[Synthesize themes from all chunks, identifying the most significant patterns]
-
-## Important People  
-[Consolidate all people mentioned across chunks with their context]
-
-## Action Items & Next Steps
-[Combine and prioritize all action items identified]
-
-## Cross-Chunk Insights
-[Identify connections and patterns that span multiple chunks]
-
-## Note References
-[Provide overview of the ${totalNoteCount} notes analyzed]
-
-Ensure all [[Note Title]] links are preserved and properly formatted for Obsidian.`;
+End with a list of all the notes that were analyzed.`;
 
 		const fullPrompt = `${systemPrompt}\n\n${summariesContent}\n\n${instructionPrompt}`;
 		

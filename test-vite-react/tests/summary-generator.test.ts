@@ -154,13 +154,12 @@ describe('SummaryGenerator', () => {
 			};
 
 			const combinedResponse: OpenAIResponse = {
-				content: '# Combined Summary\n## Key Themes\n- Combined insights',
+				content: 'You keep seeing themes around project coordination and team dynamics. There\'s definitely something happening with timeline management.\n\n## Notes Referenced\n- [[Note 1]]\n- [[Note 2]]',
 				tokensUsed: { prompt: 300, completion: 400, total: 700 },
 				model: 'gpt-4'
 			};
 
 			mockOpenAIService.generateCompletion
-				.mockResolvedValueOnce(chunkResponse)
 				.mockResolvedValueOnce(chunkResponse)
 				.mockResolvedValueOnce(chunkResponse)
 				.mockResolvedValueOnce(combinedResponse);
@@ -169,7 +168,7 @@ describe('SummaryGenerator', () => {
 
 			expect(result.content).toBe(combinedResponse.content);
 			expect(result.metadata.chunksProcessed).toBeGreaterThan(1);
-			expect(mockOpenAIService.generateCompletion).toHaveBeenCalledTimes(4); // 3 chunks + 1 combination
+			expect(mockOpenAIService.generateCompletion).toHaveBeenCalledTimes(3); // 2 chunks + 1 combination
 		});
 
 		test('should track progress through chunking and combination stages', async () => {
@@ -282,7 +281,7 @@ describe('SummaryGenerator', () => {
 
 	describe('chunking logic', () => {
 		test('should create appropriate chunks based on size limit', () => {
-			const manyNotes: FilteredNote[] = Array.from({ length: 15 }, (_, i) => ({
+			const manyNotes: FilteredNote[] = Array.from({ length: 25 }, (_, i) => ({
 				file: { path: `Note ${i + 1}.md` } as any,
 				content: 'Content',
 				createdTime: Date.now(),
@@ -295,14 +294,14 @@ describe('SummaryGenerator', () => {
 
 			const estimation = SummaryGenerator.estimateChunking(manyNotes, config);
 
-			expect(estimation.requiresChunking).toBe(true); // 15 notes > 5 chunk size
-			expect(estimation.estimatedChunks).toBe(3); // 15 notes / 5 per chunk
+			expect(estimation.requiresChunking).toBe(true); // 25 notes > 20 threshold
+			expect(estimation.estimatedChunks).toBe(5); // 25 notes / 5 per chunk
 		});
 
 		test('should identify when chunking is required due to token limits', () => {
 			const largeNotes: FilteredNote[] = Array.from({ length: 15 }, (_, i) => ({
 				file: { path: `Note ${i + 1}.md` } as any,
-				content: 'A'.repeat(10000), // Large content to trigger token limits
+				content: 'A'.repeat(30000), // Large content to trigger token limits
 				createdTime: Date.now(),
 				modifiedTime: Date.now()
 			}));

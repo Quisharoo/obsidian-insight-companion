@@ -262,7 +262,7 @@ The team has made concrete technical decisions including React for frontend deve
 
 		test('should handle large note sets with chunking', async () => {
 			// Create a large note set that will trigger chunking
-			const largeNotes: FilteredNote[] = Array.from({ length: 15 }, (_, i) => ({
+			const largeNotes: FilteredNote[] = Array.from({ length: 25 }, (_, i) => ({
 				file: { path: `Note ${i + 1}.md` } as any,
 				content: `# Note ${i + 1}\n\n` + 'Content '.repeat(500),
 				createdTime: Date.now(),
@@ -290,7 +290,7 @@ The team has made concrete technical decisions including React for frontend deve
 			const combinedResponse = {
 				choices: [{
 					message: {
-						content: `# Comprehensive Insight Summary\n\n## Key Themes\n- Combined insights from all chunks\n\n## Action Items\n- Synthesized action items`
+						content: `Project Alpha keeps showing up across all observations — lots of coordination happening, maybe more than expected. Timeline pressure seems real.\n\n## Notes Referenced\n- [[Project Alpha Planning]]\n- [[Team Standup Jan 22]]`
 					}
 				}],
 				usage: { prompt_tokens: 800, completion_tokens: 400, total_tokens: 1200 },
@@ -304,8 +304,8 @@ The team has made concrete technical decisions including React for frontend deve
 
 			const summaryResult = await summaryGenerator.generateSummary(largeFilterResult);
 
-			expect(summaryResult.content).toContain('Comprehensive Insight Summary');
-			expect(summaryResult.metadata.notesAnalyzed).toBe(15);
+			expect(summaryResult.content).toContain('Project Alpha keeps showing up');
+			expect(summaryResult.metadata.notesAnalyzed).toBe(25);
 			expect(summaryResult.metadata.chunksProcessed).toBeGreaterThan(1);
 			expect(mockFetch).toHaveBeenCalledTimes(3); // 2 chunks + 1 combination
 

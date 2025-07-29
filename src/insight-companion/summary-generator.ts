@@ -46,7 +46,7 @@ export class SummaryGenerator {
 	private config: SummaryConfig;
 
 	private static readonly DEFAULT_CONFIG: SummaryConfig = {
-		chunkSize: 10, // Max 10 notes per chunk
+		chunkSize: 15, // Max 15 notes per chunk
 		maxTokensPerChunk: 100000, // Leave buffer for response
 		retryAttempts: 3,
 		retryDelayMs: 1000,
@@ -372,7 +372,7 @@ export class SummaryGenerator {
 		const finalConfig = { ...SummaryGenerator.DEFAULT_CONFIG, ...config };
 		const tokenEstimate = TokenEstimator.estimateTokens(notes);
 		
-		const requiresChunking = tokenEstimate.totalTokens > finalConfig.maxTokensPerChunk || notes.length > finalConfig.chunkSize;
+		const requiresChunking = tokenEstimate.totalTokens > finalConfig.maxTokensPerChunk || notes.length > 20;
 		const estimatedChunks = requiresChunking 
 			? Math.ceil(notes.length / finalConfig.chunkSize)
 			: 1;

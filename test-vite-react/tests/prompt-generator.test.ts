@@ -145,7 +145,7 @@ describe('PromptGenerator', () => {
 
 			expect(result.noteCount).toBe(1);
 			expect(result.content).toContain('chunk 1 of 3');
-			expect(result.content).toContain('woven together with other chunks');
+			expect(result.content).toContain('What\'s worth noticing? What stands out?');
 		});
 
 		test('should include chunk context', () => {
@@ -188,7 +188,7 @@ describe('PromptGenerator', () => {
 			);
 
 			expect(result.noteCount).toBe(10);
-			expect(result.content).toContain('2 chunk summaries');
+			expect(result.content).toContain('2 observations');
 			expect(result.content).toContain('10 total notes');
 			expect(result.content).toContain('CHUNK 1 SUMMARY');
 			expect(result.content).toContain('CHUNK 2 SUMMARY');
@@ -228,18 +228,17 @@ describe('PromptGenerator', () => {
 			expect(result.content).toContain('Summary 2 content');
 		});
 
-		test('should provide comprehensive structure template', () => {
+		test('should provide freeform writing instructions with note references', () => {
 			const result = PromptGenerator.combineSummariesPrompt(
 				mockChunkSummaries, 
 				10, 
 				mockDateContext
 			);
 
-			expect(result.content).toContain('# Insight Summary');
-			expect(result.content).toContain('## Key Themes');
-			expect(result.content).toContain('## Important People');
-			expect(result.content).toContain('## Action Items & Next Steps');
-			expect(result.content).toContain('## Cross-Chunk Insights');
+			expect(result.content).toContain('Freeform writing, no headings required');
+			expect(result.content).toContain('## Notes Referenced');
+			expect(result.content).toContain('[[Exact Note Title]]');
+			expect(result.content).toContain('Write what you\'d want to read in 3 months');
 		});
 	});
 
@@ -289,9 +288,9 @@ describe('PromptGenerator', () => {
 		test('should include all required output format instructions', () => {
 			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext);
 
-					expect(result.content).toContain('clean Markdown without code block fences');
+					expect(result.content).toContain('Clean Markdown (no code fences)');
 		expect(result.content).toContain('[[Note Title]]');
-		expect(result.content).toContain('clickable'); // The word "clickable" appears in instructions
+		expect(result.content).toContain('Use exact note titles for links');
 		expect(result.content).toContain('# Insight Summary');
 			expect(result.content).toContain('## Key Themes');
 			expect(result.content).toContain('## Important People');
