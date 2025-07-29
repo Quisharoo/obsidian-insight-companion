@@ -249,8 +249,7 @@ describe('PromptGenerator', () => {
 			expect(result.content).toContain('Write in a freeform, natural voice');
 			expect(result.content).toContain('Do not require specific sections or headings');
 			expect(result.content).toContain('## Notes Referenced');
-			expect(result.content).toContain('- [[Note 1]]: This is the content of note 1. It contains important information about projec...');
-			expect(result.content).toContain('- [[Note 2]]: Note 2 content with different topics and some action items to complete.');
+			expect(result.content).toContain('[[Note Title]]: one-line observation, dry reaction, or quote');
 			expect(result.content).toContain('Write in freeform style and end with a "Notes Referenced" section');
 		});
 
@@ -435,10 +434,8 @@ describe('PromptGenerator', () => {
 
 			expect(structuredResult.content).toContain('## Notes Referenced');
 			expect(freeformResult.content).toContain('## Notes Referenced');
-			expect(structuredResult.content).toContain('- [[Note 1]]: This is the content of note 1. It contains important information about projec...');
-			expect(freeformResult.content).toContain('- [[Note 1]]: This is the content of note 1. It contains important information about projec...');
-			expect(structuredResult.content).toContain('- [[Note 2]]: Note 2 content with different topics and some action items to complete.');
-			expect(freeformResult.content).toContain('- [[Note 2]]: Note 2 content with different topics and some action items to complete.');
+			expect(structuredResult.content).toContain('[[Note Title]]: one-line observation, dry reaction, or quote');
+			expect(freeformResult.content).toContain('[[Note Title]]: one-line observation, dry reaction, or quote');
 		});
 	});
 
@@ -503,28 +500,13 @@ describe('PromptGenerator', () => {
 	});
 
 	describe('generateNotesReferencedSection', () => {
-		test('should generate Notes Referenced section with content from notes', () => {
-			const notesWithContent: FilteredNote[] = [
-				{
-					file: { path: 'Note 1.md' } as any,
-					content: 'This is the first meaningful line\nAnd this is another line',
-					createdTime: Date.now(),
-					modifiedTime: Date.now()
-				},
-				{
-					file: { path: 'Note 2.md' } as any,
-					content: '# Header\n\nThis note starts with a header but this line should be extracted',
-					createdTime: Date.now(),
-					modifiedTime: Date.now()
-				}
-			];
-			
+		test('should generate Notes Referenced section from notes', () => {
 			// Access the private method for testing using TypeScript bracket notation
-			const result = (PromptGenerator as any).generateNotesReferencedSection(notesWithContent);
+			const result = (PromptGenerator as any).generateNotesReferencedSection(mockNotes);
 			
 			expect(result).toContain('## Notes Referenced');
-			expect(result).toContain('- [[Note 1]]: This is the first meaningful line');
-			expect(result).toContain('- [[Note 2]]: This note starts with a header but this line should be extracted');
+			expect(result).toContain('- [[Note 1]]: included in analysis');
+			expect(result).toContain('- [[Note 2]]: included in analysis');
 		});
 
 		test('should handle empty notes array', () => {
@@ -534,88 +516,17 @@ describe('PromptGenerator', () => {
 			expect(result).toContain('[No notes were analyzed]');
 		});
 
-		test('should use witty fallbacks for notes with no meaningful content', () => {
-			const emptyNotes: FilteredNote[] = [
-				{
-					file: { path: 'Empty Note.md' } as any,
-					content: '',
-					createdTime: Date.now(),
-					modifiedTime: Date.now()
-				},
-				{
-					file: { path: 'Header Only.md' } as any,
-					content: '# Just a header\n## Another header',
-					createdTime: Date.now(),
-					modifiedTime: Date.now()
-				},
-				{
-					file: { path: 'Frontmatter Only.md' } as any,
-					content: '---\ntitle: Test\ndate: 2024-01-01\n---',
-					createdTime: Date.now(),
-					modifiedTime: Date.now()
-				}
-			];
-
-			const result = (PromptGenerator as any).generateNotesReferencedSection(emptyNotes);
-			
-			expect(result).toContain('## Notes Referenced');
-			expect(result).toContain('- [[Empty Note]]:');
-			expect(result).toContain('- [[Header Only]]:');
-			expect(result).toContain('- [[Frontmatter Only]]:');
-			
-			// Should contain one of the witty fallbacks
-			const wittyFallbacks = [
-				'exists but says nothing',
-				'definitely a note, probably',
-				'emotionally ambiguous',
-				'the strong silent type',
-				'speaks in riddles',
-				'minimalist to a fault',
-				'left us hanging',
-				'chose mystery over clarity',
-				'says everything by saying nothing',
-				'a zen master of note-taking'
-			];
-			
-			const hasWittyFallback = wittyFallbacks.some(fallback => result.includes(fallback));
-			expect(hasWittyFallback).toBe(true);
-		});
-
-		test('should truncate long content lines to 80 characters', () => {
-			const longContentNote: FilteredNote[] = [
-				{
-					file: { path: 'Long Note.md' } as any,
-					content: 'This is a very long line that should definitely be truncated because it exceeds the eighty character limit by quite a bit and would make the notes section unwieldy',
-					createdTime: Date.now(),
-					modifiedTime: Date.now()
-				}
-			];
-
-			const result = (PromptGenerator as any).generateNotesReferencedSection(longContentNote);
-			
-			expect(result).toContain('## Notes Referenced');
-			expect(result).toContain('- [[Long Note]]: This is a very long line that should definitely be truncated because it excee...');
-			
-			// Extract the observation part and verify it's properly truncated
-			const match = result.match(/- \[\[Long Note\]\]: (.+)/);
-			expect(match).toBeTruthy();
-			if (match) {
-				expect(match[1].length).toBeLessThanOrEqual(80);
-				expect(match[1].endsWith('...')).toBe(true);
-			}
-		});
-
 		test('should extract note titles correctly from file paths', () => {
 			const notesWithPaths: FilteredNote[] = [
 				{
 					file: { path: 'folder/subfolder/Complex Note Name.md' } as any,
-					content: 'Some meaningful content here',
+					content: 'Content',
 					createdTime: Date.now(),
 					modifiedTime: Date.now()
 				},
 				{
 					file: { path: 'Another Note.md' } as any,
-					content: 'More content',
+					content: 'Content',
 					createdTime: Date.now(),
 					modifiedTime: Date.now()
 				}
@@ -623,115 +534,17 @@ describe('PromptGenerator', () => {
 
 			const result = (PromptGenerator as any).generateNotesReferencedSection(notesWithPaths);
 			
-			expect(result).toContain('- [[Complex Note Name]]: Some meaningful content here');
-			expect(result).toContain('- [[Another Note]]: More content');
+			expect(result).toContain('- [[Complex Note Name]]: included in analysis');
+			expect(result).toContain('- [[Another Note]]: included in analysis');
 			expect(result).not.toContain('.md');
 			expect(result).not.toContain('folder/subfolder/');
 		});
 
-		test('should skip markdown headers and frontmatter when extracting content', () => {
-			const noteWithHeaders: FilteredNote[] = [
-				{
-					file: { path: 'Structured Note.md' } as any,
-					content: '---\ntitle: My Note\ntags: [test]\n---\n\n# Main Header\n\n## Sub Header\n\nThis is the actual content that should be extracted.\n\nMore content below.',
-					createdTime: Date.now(),
-					modifiedTime: Date.now()
-				}
-			];
-
-			const result = (PromptGenerator as any).generateNotesReferencedSection(noteWithHeaders);
-			
-			expect(result).toContain('- [[Structured Note]]: This is the actual content that should be extracted.');
-			expect(result).not.toContain('title: My Note');
-			expect(result).not.toContain('# Main Header');
-			expect(result).not.toContain('## Sub Header');
-		});
-
 		test('should format multiple notes correctly', () => {
-			const multipleNotes: FilteredNote[] = [
-				{
-					file: { path: 'Note 1.md' } as any,
-					content: 'First note content',
-					createdTime: Date.now(),
-					modifiedTime: Date.now()
-				},
-				{
-					file: { path: 'Note 2.md' } as any,
-					content: 'Second note content',
-					createdTime: Date.now(),
-					modifiedTime: Date.now()
-				}
-			];
-
-			const result = (PromptGenerator as any).generateNotesReferencedSection(multipleNotes);
+			const result = (PromptGenerator as any).generateNotesReferencedSection(mockNotes);
 			
 			expect(result.split('\n')).toHaveLength(3); // Header + 2 note lines
-			expect(result).toMatch(/^## Notes Referenced\n- \[\[Note 1\]\]: First note content\n- \[\[Note 2\]\]: Second note content$/);
-		});
-	});
-
-	describe('include Notes Referenced section at the end', () => {
-		test('should include Notes Referenced section at the end', () => {
-			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext);
-
-			expect(result.content).toContain('## Notes Referenced');
-			expect(result.content).toContain('- [[Note 1]]: This is the content of note 1. It contains important information about projec...');
-			expect(result.content).toContain('- [[Note 2]]: Note 2 content with different topics and some action items to complete.');
-			// Should be at the end
-			expect(result.content.endsWith('- [[Note 2]]: Note 2 content with different topics and some action items to complete.')).toBe(true);
-		});
-
-		test('should place Notes Referenced section at end in both styles', () => {
-			const structuredResult = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext, { insightStyle: 'structured' });
-			const freeformResult = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext, { insightStyle: 'freeform' });
-
-			// Both should end with Notes Referenced section
-			expect(structuredResult.content).toContain('## Notes Referenced');
-			expect(freeformResult.content).toContain('## Notes Referenced');
-			expect(structuredResult.content.endsWith('- [[Note 2]]: Note 2 content with different topics and some action items to complete.')).toBe(true);
-			expect(freeformResult.content.endsWith('- [[Note 2]]: Note 2 content with different topics and some action items to complete.')).toBe(true);
-		});
-
-		test('should include Notes Referenced format examples in system prompts', () => {
-			// Test structured style
-			const structuredResult = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext, { insightStyle: 'structured' });
-			expect(structuredResult.content).toContain('**End with a "Notes Referenced" section in the following format:**');
-			expect(structuredResult.content).toContain('- [[Note One]]: first sentence or dry one-liner');
-			expect(structuredResult.content).toContain('- [[Note Two]]: fallback if nothing useful found');
-
-			// Test freeform style
-			const freeformResult = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext, { insightStyle: 'freeform' });
-			expect(freeformResult.content).toContain('**End your response with a "Notes Referenced" section using this format:**');
-			expect(freeformResult.content).toContain('- [[Note One]]: one-liner observation, quote, or dry fallback');
-			expect(freeformResult.content).toContain('- [[Another Note]]: what stood out or felt odd');
-		});
-
-		test('should include Notes Referenced format examples in combineSummariesPrompt', () => {
-			const chunkSummaries = ['Summary 1', 'Summary 2'];
-			
-			// Test structured style
-			const structuredResult = PromptGenerator.combineSummariesPrompt(
-				chunkSummaries, 
-				4, 
-				mockDateContext, 
-				mockNotes, 
-				{ insightStyle: 'structured' }
-			);
-			expect(structuredResult.content).toContain('**End with a "Notes Referenced" section in the following format:**');
-			expect(structuredResult.content).toContain('- [[Note One]]: first sentence or dry one-liner');
-			expect(structuredResult.content).toContain('- [[Note Two]]: fallback if nothing useful found');
-
-			// Test freeform style
-			const freeformResult = PromptGenerator.combineSummariesPrompt(
-				chunkSummaries, 
-				4, 
-				mockDateContext, 
-				mockNotes, 
-				{ insightStyle: 'freeform' }
-			);
-			expect(freeformResult.content).toContain('**End your response with a "Notes Referenced" section using this format:**');
-			expect(freeformResult.content).toContain('- [[Note One]]: one-liner observation, quote, or dry fallback');
-			expect(freeformResult.content).toContain('- [[Another Note]]: what stood out or felt odd');
+			expect(result).toMatch(/^## Notes Referenced\n- \[\[Note 1\]\]: included in analysis\n- \[\[Note 2\]\]: included in analysis$/);
 		});
 	});
 }); 

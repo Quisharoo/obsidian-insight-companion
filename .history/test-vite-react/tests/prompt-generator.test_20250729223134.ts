@@ -435,8 +435,8 @@ describe('PromptGenerator', () => {
 
 			expect(structuredResult.content).toContain('## Notes Referenced');
 			expect(freeformResult.content).toContain('## Notes Referenced');
-			expect(structuredResult.content).toContain('- [[Note 1]]: This is the content of note 1. It contains important information about projec...');
-			expect(freeformResult.content).toContain('- [[Note 1]]: This is the content of note 1. It contains important information about projec...');
+			expect(structuredResult.content).toContain('- [[Note 1]]: This is the content of note 1. It contains important information about...');
+			expect(freeformResult.content).toContain('- [[Note 1]]: This is the content of note 1. It contains important information about...');
 			expect(structuredResult.content).toContain('- [[Note 2]]: Note 2 content with different topics and some action items to complete.');
 			expect(freeformResult.content).toContain('- [[Note 2]]: Note 2 content with different topics and some action items to complete.');
 		});
@@ -594,7 +594,7 @@ describe('PromptGenerator', () => {
 			const result = (PromptGenerator as any).generateNotesReferencedSection(longContentNote);
 			
 			expect(result).toContain('## Notes Referenced');
-			expect(result).toContain('- [[Long Note]]: This is a very long line that should definitely be truncated because it excee...');
+			expect(result).toContain('- [[Long Note]]: This is a very long line that should definitely be truncated because it...');
 			
 			// Extract the observation part and verify it's properly truncated
 			const match = result.match(/- \[\[Long Note\]\]: (.+)/);
@@ -675,7 +675,7 @@ describe('PromptGenerator', () => {
 			const result = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext);
 
 			expect(result.content).toContain('## Notes Referenced');
-			expect(result.content).toContain('- [[Note 1]]: This is the content of note 1. It contains important information about projec...');
+			expect(result.content).toContain('- [[Note 1]]: This is the content of note 1. It contains important information about...');
 			expect(result.content).toContain('- [[Note 2]]: Note 2 content with different topics and some action items to complete.');
 			// Should be at the end
 			expect(result.content.endsWith('- [[Note 2]]: Note 2 content with different topics and some action items to complete.')).toBe(true);
@@ -690,48 +690,6 @@ describe('PromptGenerator', () => {
 			expect(freeformResult.content).toContain('## Notes Referenced');
 			expect(structuredResult.content.endsWith('- [[Note 2]]: Note 2 content with different topics and some action items to complete.')).toBe(true);
 			expect(freeformResult.content.endsWith('- [[Note 2]]: Note 2 content with different topics and some action items to complete.')).toBe(true);
-		});
-
-		test('should include Notes Referenced format examples in system prompts', () => {
-			// Test structured style
-			const structuredResult = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext, { insightStyle: 'structured' });
-			expect(structuredResult.content).toContain('**End with a "Notes Referenced" section in the following format:**');
-			expect(structuredResult.content).toContain('- [[Note One]]: first sentence or dry one-liner');
-			expect(structuredResult.content).toContain('- [[Note Two]]: fallback if nothing useful found');
-
-			// Test freeform style
-			const freeformResult = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext, { insightStyle: 'freeform' });
-			expect(freeformResult.content).toContain('**End your response with a "Notes Referenced" section using this format:**');
-			expect(freeformResult.content).toContain('- [[Note One]]: one-liner observation, quote, or dry fallback');
-			expect(freeformResult.content).toContain('- [[Another Note]]: what stood out or felt odd');
-		});
-
-		test('should include Notes Referenced format examples in combineSummariesPrompt', () => {
-			const chunkSummaries = ['Summary 1', 'Summary 2'];
-			
-			// Test structured style
-			const structuredResult = PromptGenerator.combineSummariesPrompt(
-				chunkSummaries, 
-				4, 
-				mockDateContext, 
-				mockNotes, 
-				{ insightStyle: 'structured' }
-			);
-			expect(structuredResult.content).toContain('**End with a "Notes Referenced" section in the following format:**');
-			expect(structuredResult.content).toContain('- [[Note One]]: first sentence or dry one-liner');
-			expect(structuredResult.content).toContain('- [[Note Two]]: fallback if nothing useful found');
-
-			// Test freeform style
-			const freeformResult = PromptGenerator.combineSummariesPrompt(
-				chunkSummaries, 
-				4, 
-				mockDateContext, 
-				mockNotes, 
-				{ insightStyle: 'freeform' }
-			);
-			expect(freeformResult.content).toContain('**End your response with a "Notes Referenced" section using this format:**');
-			expect(freeformResult.content).toContain('- [[Note One]]: one-liner observation, quote, or dry fallback');
-			expect(freeformResult.content).toContain('- [[Another Note]]: what stood out or felt odd');
 		});
 	});
 }); 

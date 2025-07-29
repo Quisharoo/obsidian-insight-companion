@@ -35,9 +35,8 @@ export class PromptGenerator {
 		const systemPrompt = this.buildSystemPrompt(finalConfig);
 		const notesContent = this.buildNotesContent(notes, finalConfig);
 		const instructionPrompt = this.buildInstructionPrompt(context, notes.length, finalConfig);
-		const notesReferencedSection = this.generateNotesReferencedSection(notes);
 		
-		const fullPrompt = `${systemPrompt}\n\n${notesContent}\n\n${instructionPrompt}\n\n${notesReferencedSection}`;
+		const fullPrompt = `${systemPrompt}\n\n${notesContent}\n\n${instructionPrompt}`;
 		
 		return {
 			content: fullPrompt,
@@ -82,11 +81,10 @@ Say:
 - Mention what patterns, contradictions, unresolved bits you notice
 - Be observational, not summarizing each note
 - Encourage natural flow and grouping, but do not require labels or bullet points
-
-**End your response with a "Notes Referenced" section using this format:**
+- **End your response with:**
 
 ## Notes Referenced
-- [[Note One]]: one-liner observation, quote, or dry fallback
+- [[Note Title]]: one-line observation, dry reaction, or quote
 - [[Another Note]]: what stood out or felt odd`;
 		} else {
 			// Structured format (default)
@@ -113,11 +111,9 @@ Say:
 ## Action Items & Next Steps
 [What feels open, hanging, or waiting? Don't invent tasks — just point at loose ends.]
 
-**End with a "Notes Referenced" section in the following format:**
-
 ## Notes Referenced
-- [[Note One]]: first sentence or dry one-liner
-- [[Note Two]]: fallback if nothing useful found`;
+- [[Note Title]]: one-line observation, dry reaction, or quote
+- [[Another Note]]: what stood out or felt odd`;
 		}
 	}
 
@@ -210,74 +206,6 @@ When referencing notes in your analysis:
 	}
 
 	/**
-	 * Generate the Notes Referenced section from actual notes
-	 */
-	private static generateNotesReferencedSection(notes: FilteredNote[]): string {
-		if (notes.length === 0) {
-			return '## Notes Referenced\n[No notes were analyzed]';
-		}
-
-		const wittyFallbacks = [
-			'exists but says nothing',
-			'definitely a note, probably',
-			'emotionally ambiguous',
-			'the strong silent type',
-			'speaks in riddles',
-			'minimalist to a fault',
-			'left us hanging',
-			'chose mystery over clarity',
-			'says everything by saying nothing',
-			'a zen master of note-taking'
-		];
-
-		const notesReferenced = notes
-			.map(note => {
-				const title = this.extractNoteTitle(note.file.path);
-				
-				// Extract first non-empty line from content
-				const firstLine = this.extractFirstMeaningfulLine(note.content);
-				
-				let observation: string;
-				if (firstLine) {
-					// Truncate if too long (80 chars)
-					observation = firstLine.length > 80 
-						? firstLine.substring(0, 77) + '...'
-						: firstLine;
-				} else {
-					// Use random witty fallback
-					const randomIndex = Math.floor(Math.random() * wittyFallbacks.length);
-					observation = wittyFallbacks[randomIndex];
-				}
-				
-				return `- [[${title}]]: ${observation}`;
-			})
-			.join('\n');
-
-		return `## Notes Referenced\n${notesReferenced}`;
-	}
-
-	/**
-	 * Extract the first meaningful (non-empty, non-whitespace) line from note content
-	 */
-	private static extractFirstMeaningfulLine(content: string): string {
-		if (!content) return '';
-		
-		const lines = content.split('\n');
-		for (const line of lines) {
-			const trimmed = line.trim();
-			// Skip empty lines, markdown headers, and common frontmatter
-			if (trimmed && 
-				!trimmed.startsWith('#') && 
-				!trimmed.startsWith('---') &&
-				!trimmed.match(/^\w+:\s/)) { // Skip YAML frontmatter like "title: Something"
-				return trimmed;
-			}
-		}
-		
-		return '';
-	}
-
-	/**
 	 * Generate prompt for analyzing a specific chunk of notes
 	 */
 	static buildChunkAnalysisPrompt(
@@ -330,7 +258,6 @@ What's worth noticing? What stands out? Who keeps showing up? What feels unfinis
 		chunkSummaries: string[], 
 		totalNoteCount: number, 
 		context: { dateRange?: DateRange; folderName?: string; folderPath?: string; mode: 'date' | 'folder' },
-		notes: FilteredNote[],
 		config: Partial<PromptConfig> = {}
 	): GeneratedPrompt {
 		const finalConfig = { ...this.DEFAULT_CONFIG, ...config };
@@ -352,11 +279,10 @@ You're allowed to be dry. Observational. Even funny — in that "I've seen this 
 - Mention what patterns, contradictions, unresolved bits you notice
 - Be observational, not summarizing each note
 - Encourage natural flow and grouping, but do not require labels or bullet points
-
-**End your response with a "Notes Referenced" section using this format:**
+- **End your response with:**
 
 ## Notes Referenced
-- [[Note One]]: one-liner observation, quote, or dry fallback
+- [[Note Title]]: one-line observation, dry reaction, or quote
 - [[Another Note]]: what stood out or felt odd`;
 		} else {
 			// Structured format (default)
@@ -383,11 +309,9 @@ You're allowed to be dry. Observational. Even funny — in that "I've seen this 
 ## Action Items & Next Steps
 [What feels open, hanging, or waiting? Don't invent tasks — just point at loose ends.]
 
-**End with a "Notes Referenced" section in the following format:**
-
 ## Notes Referenced
-- [[Note One]]: first sentence or dry one-liner
-- [[Note Two]]: fallback if nothing useful found`;
+- [[Note Title]]: one-line observation, dry reaction, or quote
+- [[Another Note]]: what stood out or felt odd`;
 		}
 
 		const summariesContent = chunkSummaries
@@ -415,8 +339,7 @@ ${finalConfig.insightStyle === 'freeform'
 	: 'Follow the structured format with clear headings and end with a "Notes Referenced" section listing all the notes that were analyzed.'
 }`;
 
-		const notesReferencedSection = this.generateNotesReferencedSection(notes);
-		const fullPrompt = `${systemPrompt}\n\n${summariesContent}\n\n${instructionPrompt}\n\n${notesReferencedSection}`;
+		const fullPrompt = `${systemPrompt}\n\n${summariesContent}\n\n${instructionPrompt}`;
 		
 		return {
 			content: fullPrompt,

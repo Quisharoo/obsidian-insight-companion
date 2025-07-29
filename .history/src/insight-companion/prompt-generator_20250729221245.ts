@@ -82,12 +82,7 @@ Say:
 - Mention what patterns, contradictions, unresolved bits you notice
 - Be observational, not summarizing each note
 - Encourage natural flow and grouping, but do not require labels or bullet points
-
-**End your response with a "Notes Referenced" section using this format:**
-
-## Notes Referenced
-- [[Note One]]: one-liner observation, quote, or dry fallback
-- [[Another Note]]: what stood out or felt odd`;
+- **End your response with a "Notes Referenced" section**`;
 		} else {
 			// Structured format (default)
 			return `${basePersonality}
@@ -113,11 +108,7 @@ Say:
 ## Action Items & Next Steps
 [What feels open, hanging, or waiting? Don't invent tasks — just point at loose ends.]
 
-**End with a "Notes Referenced" section in the following format:**
-
-## Notes Referenced
-- [[Note One]]: first sentence or dry one-liner
-- [[Note Two]]: fallback if nothing useful found`;
+**End with a "Notes Referenced" section**`;
 		}
 	}
 
@@ -217,64 +208,14 @@ When referencing notes in your analysis:
 			return '## Notes Referenced\n[No notes were analyzed]';
 		}
 
-		const wittyFallbacks = [
-			'exists but says nothing',
-			'definitely a note, probably',
-			'emotionally ambiguous',
-			'the strong silent type',
-			'speaks in riddles',
-			'minimalist to a fault',
-			'left us hanging',
-			'chose mystery over clarity',
-			'says everything by saying nothing',
-			'a zen master of note-taking'
-		];
-
 		const notesReferenced = notes
 			.map(note => {
 				const title = this.extractNoteTitle(note.file.path);
-				
-				// Extract first non-empty line from content
-				const firstLine = this.extractFirstMeaningfulLine(note.content);
-				
-				let observation: string;
-				if (firstLine) {
-					// Truncate if too long (80 chars)
-					observation = firstLine.length > 80 
-						? firstLine.substring(0, 77) + '...'
-						: firstLine;
-				} else {
-					// Use random witty fallback
-					const randomIndex = Math.floor(Math.random() * wittyFallbacks.length);
-					observation = wittyFallbacks[randomIndex];
-				}
-				
-				return `- [[${title}]]: ${observation}`;
+				return `- [[${title}]]: included in analysis`;
 			})
 			.join('\n');
 
 		return `## Notes Referenced\n${notesReferenced}`;
-	}
-
-	/**
-	 * Extract the first meaningful (non-empty, non-whitespace) line from note content
-	 */
-	private static extractFirstMeaningfulLine(content: string): string {
-		if (!content) return '';
-		
-		const lines = content.split('\n');
-		for (const line of lines) {
-			const trimmed = line.trim();
-			// Skip empty lines, markdown headers, and common frontmatter
-			if (trimmed && 
-				!trimmed.startsWith('#') && 
-				!trimmed.startsWith('---') &&
-				!trimmed.match(/^\w+:\s/)) { // Skip YAML frontmatter like "title: Something"
-				return trimmed;
-			}
-		}
-		
-		return '';
 	}
 
 	/**
@@ -352,12 +293,7 @@ You're allowed to be dry. Observational. Even funny — in that "I've seen this 
 - Mention what patterns, contradictions, unresolved bits you notice
 - Be observational, not summarizing each note
 - Encourage natural flow and grouping, but do not require labels or bullet points
-
-**End your response with a "Notes Referenced" section using this format:**
-
-## Notes Referenced
-- [[Note One]]: one-liner observation, quote, or dry fallback
-- [[Another Note]]: what stood out or felt odd`;
+- **End your response with a "Notes Referenced" section**`;
 		} else {
 			// Structured format (default)
 			systemPrompt = `${basePersonality}
@@ -383,11 +319,7 @@ You're allowed to be dry. Observational. Even funny — in that "I've seen this 
 ## Action Items & Next Steps
 [What feels open, hanging, or waiting? Don't invent tasks — just point at loose ends.]
 
-**End with a "Notes Referenced" section in the following format:**
-
-## Notes Referenced
-- [[Note One]]: first sentence or dry one-liner
-- [[Note Two]]: fallback if nothing useful found`;
+**End with a "Notes Referenced" section**`;
 		}
 
 		const summariesContent = chunkSummaries

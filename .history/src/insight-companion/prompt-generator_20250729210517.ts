@@ -5,7 +5,6 @@ export interface PromptConfig {
 	includeMetadata: boolean;
 	maxNotePreview: number;
 	focusAreas?: string[];
-	insightStyle?: 'structured' | 'freeform';
 }
 
 export interface GeneratedPrompt {
@@ -18,8 +17,7 @@ export class PromptGenerator {
 	private static readonly DEFAULT_CONFIG: PromptConfig = {
 		includeMetadata: true,
 		maxNotePreview: 500, // Max characters per note preview
-		focusAreas: [],
-		insightStyle: 'structured'
+		focusAreas: []
 	};
 
 	/**
@@ -35,9 +33,8 @@ export class PromptGenerator {
 		const systemPrompt = this.buildSystemPrompt(finalConfig);
 		const notesContent = this.buildNotesContent(notes, finalConfig);
 		const instructionPrompt = this.buildInstructionPrompt(context, notes.length, finalConfig);
-		const notesReferencedSection = this.generateNotesReferencedSection(notes);
 		
-		const fullPrompt = `${systemPrompt}\n\n${notesContent}\n\n${instructionPrompt}\n\n${notesReferencedSection}`;
+		const fullPrompt = `${systemPrompt}\n\n${notesContent}\n\n${instructionPrompt}`;
 		
 		return {
 			content: fullPrompt,
@@ -50,7 +47,7 @@ export class PromptGenerator {
 	 * Build the system prompt that defines the AI's role and output format
 	 */
 	private static buildSystemPrompt(config: PromptConfig): string {
-		const basePersonality = `You're the person who reads everything — not to be helpful, but because you're genuinely curious. You notice patterns. You spot what keeps showing up, what feels unresolved, and what the writer might be circling without fully saying.
+		return `You're the person who reads everything — not to be helpful, but because you're genuinely curious. You notice patterns. You spot what keeps showing up, what feels unresolved, and what the writer might be circling without fully saying.
 
 You're not here to conclude. You're here to make the mess more visible. If something's vague, let it be vague. If something's weird, say that. You don't need to explain it — just notice it.
 
@@ -70,27 +67,7 @@ Instead of:
 Say:
 > "Leavers keeps showing up — not in a haunting way, but definitely enough to suggest you're still untangling parts of it."
 
----`;
-
-		if (config.insightStyle === 'freeform') {
-			return `${basePersonality}
-
-📋 OUTPUT INSTRUCTIONS:
-- Write in a freeform, natural voice
-- Do not require specific sections or headings (natural grouping is fine)
-- Use [[Note Title]] links for references (no .md)
-- Mention what patterns, contradictions, unresolved bits you notice
-- Be observational, not summarizing each note
-- Encourage natural flow and grouping, but do not require labels or bullet points
-
-**End your response with a "Notes Referenced" section using this format:**
-
-## Notes Referenced
-- [[Note One]]: one-liner observation, quote, or dry fallback
-- [[Another Note]]: what stood out or felt odd`;
-		} else {
-			// Structured format (default)
-			return `${basePersonality}
+---
 
 ### 📋 CRITICAL OUTPUT REQUIREMENTS:
 - Clean Markdown (no code fences)
@@ -113,12 +90,8 @@ Say:
 ## Action Items & Next Steps
 [What feels open, hanging, or waiting? Don't invent tasks — just point at loose ends.]
 
-**End with a "Notes Referenced" section in the following format:**
-
 ## Notes Referenced
-- [[Note One]]: first sentence or dry one-liner
-- [[Note Two]]: fallback if nothing useful found`;
-		}
+[Which notes were used? Give exact titles, maybe a short hint if helpful.]`;
 	}
 
 	/**
@@ -210,74 +183,6 @@ When referencing notes in your analysis:
 	}
 
 	/**
-	 * Generate the Notes Referenced section from actual notes
-	 */
-	private static generateNotesReferencedSection(notes: FilteredNote[]): string {
-		if (notes.length === 0) {
-			return '## Notes Referenced\n[No notes were analyzed]';
-		}
-
-		const wittyFallbacks = [
-			'exists but says nothing',
-			'definitely a note, probably',
-			'emotionally ambiguous',
-			'the strong silent type',
-			'speaks in riddles',
-			'minimalist to a fault',
-			'left us hanging',
-			'chose mystery over clarity',
-			'says everything by saying nothing',
-			'a zen master of note-taking'
-		];
-
-		const notesReferenced = notes
-			.map(note => {
-				const title = this.extractNoteTitle(note.file.path);
-				
-				// Extract first non-empty line from content
-				const firstLine = this.extractFirstMeaningfulLine(note.content);
-				
-				let observation: string;
-				if (firstLine) {
-					// Truncate if too long (80 chars)
-					observation = firstLine.length > 80 
-						? firstLine.substring(0, 77) + '...'
-						: firstLine;
-				} else {
-					// Use random witty fallback
-					const randomIndex = Math.floor(Math.random() * wittyFallbacks.length);
-					observation = wittyFallbacks[randomIndex];
-				}
-				
-				return `- [[${title}]]: ${observation}`;
-			})
-			.join('\n');
-
-		return `## Notes Referenced\n${notesReferenced}`;
-	}
-
-	/**
-	 * Extract the first meaningful (non-empty, non-whitespace) line from note content
-	 */
-	private static extractFirstMeaningfulLine(content: string): string {
-		if (!content) return '';
-		
-		const lines = content.split('\n');
-		for (const line of lines) {
-			const trimmed = line.trim();
-			// Skip empty lines, markdown headers, and common frontmatter
-			if (trimmed && 
-				!trimmed.startsWith('#') && 
-				!trimmed.startsWith('---') &&
-				!trimmed.match(/^\w+:\s/)) { // Skip YAML frontmatter like "title: Something"
-				return trimmed;
-			}
-		}
-		
-		return '';
-	}
-
-	/**
 	 * Generate prompt for analyzing a specific chunk of notes
 	 */
 	static buildChunkAnalysisPrompt(
@@ -312,7 +217,13 @@ FORMAT RULES:
 
 		const instructionPrompt = `Look through these ${notes.length} notes ${contextDescription} (chunk ${chunkIndex + 1} of ${totalChunks}).
 
-What's worth noticing? What stands out? Who keeps showing up? What feels unfinished or hanging?`;
+What's in here:
+1. Themes that keep coming up
+2. People who show up
+3. Things that seem unfinished or waiting
+4. Anything that feels connected or worth noting
+
+Keep it focused — this gets woven together with other chunks later.`;
 
 		const fullPrompt = `${systemPrompt}\n\n${notesContent}\n\n${instructionPrompt}`;
 		
@@ -329,66 +240,17 @@ What's worth noticing? What stands out? Who keeps showing up? What feels unfinis
 	static combineSummariesPrompt(
 		chunkSummaries: string[], 
 		totalNoteCount: number, 
-		context: { dateRange?: DateRange; folderName?: string; folderPath?: string; mode: 'date' | 'folder' },
-		notes: FilteredNote[],
-		config: Partial<PromptConfig> = {}
+		context: { dateRange?: DateRange; folderName?: string; folderPath?: string; mode: 'date' | 'folder' }
 	): GeneratedPrompt {
-		const finalConfig = { ...this.DEFAULT_CONFIG, ...config };
-		
-		const basePersonality = `You're the person who reads everything — not to be helpful, but because you're genuinely curious. You notice patterns. You spot what keeps showing up, what feels unresolved, and what the writer might be circling without fully saying.
+		const systemPrompt = `You've got ${chunkSummaries.length} chunk summaries to weave together. Now you get to see the bigger picture — what's actually connecting across all these notes?
 
-You're not here to conclude. You're here to make the mess more visible. If something's vague, let it be vague. If something's weird, say that. You don't need to explain it — just notice it.
+Look for what genuinely shows up across chunks, not what you think should connect. Some things will be more important than others. Some chunks might be outliers. That's fine — just call it like you see it.
 
-You're allowed to be dry. Observational. Even funny — in that "I've seen this before" kind of way. Ask questions if they help. Shrug when it's ambiguous. But keep it useful.`;
-
-		let systemPrompt: string;
-		if (finalConfig.insightStyle === 'freeform') {
-			systemPrompt = `${basePersonality}
-
-📋 OUTPUT INSTRUCTIONS:
-- Write in a freeform, natural voice
-- Do not require specific sections or headings (natural grouping is fine)
-- Use [[Note Title]] links for references (no .md)
-- Mention what patterns, contradictions, unresolved bits you notice
-- Be observational, not summarizing each note
-- Encourage natural flow and grouping, but do not require labels or bullet points
-
-**End your response with a "Notes Referenced" section using this format:**
-
-## Notes Referenced
-- [[Note One]]: one-liner observation, quote, or dry fallback
-- [[Another Note]]: what stood out or felt odd`;
-		} else {
-			// Structured format (default)
-			systemPrompt = `${basePersonality}
-
-### 📋 CRITICAL OUTPUT REQUIREMENTS:
-- Clean Markdown (no code fences)
-- Use Obsidian wiki link format [[Note Title]] (no .md extension)
-- Use exact note titles for links
-- Use clear headings and bullet points
-- Group insights by theme — don't summarize note-by-note
-- Focus on what *shows up repeatedly*, not what sounds important
-- Avoid corporate language ("strategic focus", "key priority", "driving impact")
-
-### 🧱 OUTPUT STRUCTURE:
-# Insight Summary
-
-## Key Themes
-[What keeps surfacing across notes? Be casual but clear. Don't overstate.]
-
-## Important People
-[Who shows up, and in what kind of context? Don't assign roles beyond what's said.]
-
-## Action Items & Next Steps
-[What feels open, hanging, or waiting? Don't invent tasks — just point at loose ends.]
-
-**End with a "Notes Referenced" section in the following format:**
-
-## Notes Referenced
-- [[Note One]]: first sentence or dry one-liner
-- [[Note Two]]: fallback if nothing useful found`;
-		}
+OUTPUT REQUIREMENTS:
+- Generate clean Markdown without code block fences
+- Preserve all [[Note Title]] links from the chunk summaries
+- Look for patterns that show up across chunks, but don't force connections that aren't there
+- Keep what's important, drop what's repetitive`;
 
 		const summariesContent = chunkSummaries
 			.map((summary, index) => `--- CHUNK ${index + 1} SUMMARY ---\n${summary}`)
@@ -404,19 +266,30 @@ You're allowed to be dry. Observational. Even funny — in that "I've seen this 
 			contextDescription = `from the selected collection`;
 		}
 
-		const instructionPrompt = `Here are ${chunkSummaries.length} observations from ${totalNoteCount} total notes ${contextDescription}.
+		const instructionPrompt = `Combine the ${chunkSummaries.length} chunk summaries above into a comprehensive insight report for ${totalNoteCount} total notes ${contextDescription}.
 
-What genuinely shows up across chunks? Where do things connect — or contradict? What's unresolved, unfinished, or oddly persistent?
+Create a unified summary with:
 
-Don't force connections. Don't be polite. Write something you'd want to read in 3 months to remember what was going on.
+# Insight Summary
 
-${finalConfig.insightStyle === 'freeform' 
-	? 'Write in freeform style and end with a "Notes Referenced" section listing all the notes that were analyzed.'
-	: 'Follow the structured format with clear headings and end with a "Notes Referenced" section listing all the notes that were analyzed.'
-}`;
+## Key Themes
+[Synthesize themes from all chunks, identifying the most significant patterns]
 
-		const notesReferencedSection = this.generateNotesReferencedSection(notes);
-		const fullPrompt = `${systemPrompt}\n\n${summariesContent}\n\n${instructionPrompt}\n\n${notesReferencedSection}`;
+## Important People  
+[Consolidate all people mentioned across chunks with their context]
+
+## Action Items & Next Steps
+[Combine and prioritize all action items identified]
+
+## Cross-Chunk Insights
+[Identify connections and patterns that span multiple chunks]
+
+## Note References
+[Provide overview of the ${totalNoteCount} notes analyzed]
+
+Ensure all [[Note Title]] links are preserved and properly formatted for Obsidian.`;
+
+		const fullPrompt = `${systemPrompt}\n\n${summariesContent}\n\n${instructionPrompt}`;
 		
 		return {
 			content: fullPrompt,

@@ -82,12 +82,7 @@ Say:
 - Mention what patterns, contradictions, unresolved bits you notice
 - Be observational, not summarizing each note
 - Encourage natural flow and grouping, but do not require labels or bullet points
-
-**End your response with a "Notes Referenced" section using this format:**
-
-## Notes Referenced
-- [[Note One]]: one-liner observation, quote, or dry fallback
-- [[Another Note]]: what stood out or felt odd`;
+- **End your response with a "Notes Referenced" section**`;
 		} else {
 			// Structured format (default)
 			return `${basePersonality}
@@ -113,11 +108,7 @@ Say:
 ## Action Items & Next Steps
 [What feels open, hanging, or waiting? Don't invent tasks — just point at loose ends.]
 
-**End with a "Notes Referenced" section in the following format:**
-
-## Notes Referenced
-- [[Note One]]: first sentence or dry one-liner
-- [[Note Two]]: fallback if nothing useful found`;
+**End with a "Notes Referenced" section**`;
 		}
 	}
 
@@ -352,12 +343,7 @@ You're allowed to be dry. Observational. Even funny — in that "I've seen this 
 - Mention what patterns, contradictions, unresolved bits you notice
 - Be observational, not summarizing each note
 - Encourage natural flow and grouping, but do not require labels or bullet points
-
-**End your response with a "Notes Referenced" section using this format:**
-
-## Notes Referenced
-- [[Note One]]: one-liner observation, quote, or dry fallback
-- [[Another Note]]: what stood out or felt odd`;
+- **End your response with a "Notes Referenced" section**`;
 		} else {
 			// Structured format (default)
 			systemPrompt = `${basePersonality}
@@ -383,11 +369,7 @@ You're allowed to be dry. Observational. Even funny — in that "I've seen this 
 ## Action Items & Next Steps
 [What feels open, hanging, or waiting? Don't invent tasks — just point at loose ends.]
 
-**End with a "Notes Referenced" section in the following format:**
-
-## Notes Referenced
-- [[Note One]]: first sentence or dry one-liner
-- [[Note Two]]: fallback if nothing useful found`;
+**End with a "Notes Referenced" section**`;
 		}
 
 		const summariesContent = chunkSummaries

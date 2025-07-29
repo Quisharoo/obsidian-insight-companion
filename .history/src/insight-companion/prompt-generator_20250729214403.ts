@@ -35,9 +35,8 @@ export class PromptGenerator {
 		const systemPrompt = this.buildSystemPrompt(finalConfig);
 		const notesContent = this.buildNotesContent(notes, finalConfig);
 		const instructionPrompt = this.buildInstructionPrompt(context, notes.length, finalConfig);
-		const notesReferencedSection = this.generateNotesReferencedSection(notes);
 		
-		const fullPrompt = `${systemPrompt}\n\n${notesContent}\n\n${instructionPrompt}\n\n${notesReferencedSection}`;
+		const fullPrompt = `${systemPrompt}\n\n${notesContent}\n\n${instructionPrompt}`;
 		
 		return {
 			content: fullPrompt,
@@ -82,11 +81,10 @@ Say:
 - Mention what patterns, contradictions, unresolved bits you notice
 - Be observational, not summarizing each note
 - Encourage natural flow and grouping, but do not require labels or bullet points
-
-**End your response with a "Notes Referenced" section using this format:**
+- **End your response with:**
 
 ## Notes Referenced
-- [[Note One]]: one-liner observation, quote, or dry fallback
+- [[Note Title]]: one-line observation, dry reaction, or quote
 - [[Another Note]]: what stood out or felt odd`;
 		} else {
 			// Structured format (default)
@@ -113,11 +111,9 @@ Say:
 ## Action Items & Next Steps
 [What feels open, hanging, or waiting? Don't invent tasks — just point at loose ends.]
 
-**End with a "Notes Referenced" section in the following format:**
-
 ## Notes Referenced
-- [[Note One]]: first sentence or dry one-liner
-- [[Note Two]]: fallback if nothing useful found`;
+- [[Note Title]]: one-line observation, dry reaction, or quote
+- [[Another Note]]: what stood out or felt odd`;
 		}
 	}
 
@@ -210,74 +206,6 @@ When referencing notes in your analysis:
 	}
 
 	/**
-	 * Generate the Notes Referenced section from actual notes
-	 */
-	private static generateNotesReferencedSection(notes: FilteredNote[]): string {
-		if (notes.length === 0) {
-			return '## Notes Referenced\n[No notes were analyzed]';
-		}
-
-		const wittyFallbacks = [
-			'exists but says nothing',
-			'definitely a note, probably',
-			'emotionally ambiguous',
-			'the strong silent type',
-			'speaks in riddles',
-			'minimalist to a fault',
-			'left us hanging',
-			'chose mystery over clarity',
-			'says everything by saying nothing',
-			'a zen master of note-taking'
-		];
-
-		const notesReferenced = notes
-			.map(note => {
-				const title = this.extractNoteTitle(note.file.path);
-				
-				// Extract first non-empty line from content
-				const firstLine = this.extractFirstMeaningfulLine(note.content);
-				
-				let observation: string;
-				if (firstLine) {
-					// Truncate if too long (80 chars)
-					observation = firstLine.length > 80 
-						? firstLine.substring(0, 77) + '...'
-						: firstLine;
-				} else {
-					// Use random witty fallback
-					const randomIndex = Math.floor(Math.random() * wittyFallbacks.length);
-					observation = wittyFallbacks[randomIndex];
-				}
-				
-				return `- [[${title}]]: ${observation}`;
-			})
-			.join('\n');
-
-		return `## Notes Referenced\n${notesReferenced}`;
-	}
-
-	/**
-	 * Extract the first meaningful (non-empty, non-whitespace) line from note content
-	 */
-	private static extractFirstMeaningfulLine(content: string): string {
-		if (!content) return '';
-		
-		const lines = content.split('\n');
-		for (const line of lines) {
-			const trimmed = line.trim();
-			// Skip empty lines, markdown headers, and common frontmatter
-			if (trimmed && 
-				!trimmed.startsWith('#') && 
-				!trimmed.startsWith('---') &&
-				!trimmed.match(/^\w+:\s/)) { // Skip YAML frontmatter like "title: Something"
-				return trimmed;
-			}
-		}
-		
-		return '';
-	}
-
-	/**
 	 * Generate prompt for analyzing a specific chunk of notes
 	 */
 	static buildChunkAnalysisPrompt(
@@ -329,21 +257,13 @@ What's worth noticing? What stands out? Who keeps showing up? What feels unfinis
 	static combineSummariesPrompt(
 		chunkSummaries: string[], 
 		totalNoteCount: number, 
-		context: { dateRange?: DateRange; folderName?: string; folderPath?: string; mode: 'date' | 'folder' },
-		notes: FilteredNote[],
-		config: Partial<PromptConfig> = {}
+		context: { dateRange?: DateRange; folderName?: string; folderPath?: string; mode: 'date' | 'folder' }
 	): GeneratedPrompt {
-		const finalConfig = { ...this.DEFAULT_CONFIG, ...config };
-		
-		const basePersonality = `You're the person who reads everything — not to be helpful, but because you're genuinely curious. You notice patterns. You spot what keeps showing up, what feels unresolved, and what the writer might be circling without fully saying.
+		const systemPrompt = `You're the person who reads everything — not to be helpful, but because you're genuinely curious. You notice patterns. You spot what keeps showing up, what feels unresolved, and what the writer might be circling without fully saying.
 
 You're not here to conclude. You're here to make the mess more visible. If something's vague, let it be vague. If something's weird, say that. You don't need to explain it — just notice it.
 
-You're allowed to be dry. Observational. Even funny — in that "I've seen this before" kind of way. Ask questions if they help. Shrug when it's ambiguous. But keep it useful.`;
-
-		let systemPrompt: string;
-		if (finalConfig.insightStyle === 'freeform') {
-			systemPrompt = `${basePersonality}
+You're allowed to be dry. Observational. Even funny — in that "I've seen this before" kind of way. Ask questions if they help. Shrug when it's ambiguous. But keep it useful.
 
 📋 OUTPUT INSTRUCTIONS:
 - Write in a freeform, natural voice
@@ -352,43 +272,11 @@ You're allowed to be dry. Observational. Even funny — in that "I've seen this 
 - Mention what patterns, contradictions, unresolved bits you notice
 - Be observational, not summarizing each note
 - Encourage natural flow and grouping, but do not require labels or bullet points
-
-**End your response with a "Notes Referenced" section using this format:**
+- **End your response with:**
 
 ## Notes Referenced
-- [[Note One]]: one-liner observation, quote, or dry fallback
+- [[Note Title]]: one-line observation, dry reaction, or quote
 - [[Another Note]]: what stood out or felt odd`;
-		} else {
-			// Structured format (default)
-			systemPrompt = `${basePersonality}
-
-### 📋 CRITICAL OUTPUT REQUIREMENTS:
-- Clean Markdown (no code fences)
-- Use Obsidian wiki link format [[Note Title]] (no .md extension)
-- Use exact note titles for links
-- Use clear headings and bullet points
-- Group insights by theme — don't summarize note-by-note
-- Focus on what *shows up repeatedly*, not what sounds important
-- Avoid corporate language ("strategic focus", "key priority", "driving impact")
-
-### 🧱 OUTPUT STRUCTURE:
-# Insight Summary
-
-## Key Themes
-[What keeps surfacing across notes? Be casual but clear. Don't overstate.]
-
-## Important People
-[Who shows up, and in what kind of context? Don't assign roles beyond what's said.]
-
-## Action Items & Next Steps
-[What feels open, hanging, or waiting? Don't invent tasks — just point at loose ends.]
-
-**End with a "Notes Referenced" section in the following format:**
-
-## Notes Referenced
-- [[Note One]]: first sentence or dry one-liner
-- [[Note Two]]: fallback if nothing useful found`;
-		}
 
 		const summariesContent = chunkSummaries
 			.map((summary, index) => `--- CHUNK ${index + 1} SUMMARY ---\n${summary}`)
@@ -410,13 +298,9 @@ What genuinely shows up across chunks? Where do things connect — or contradict
 
 Don't force connections. Don't be polite. Write something you'd want to read in 3 months to remember what was going on.
 
-${finalConfig.insightStyle === 'freeform' 
-	? 'Write in freeform style and end with a "Notes Referenced" section listing all the notes that were analyzed.'
-	: 'Follow the structured format with clear headings and end with a "Notes Referenced" section listing all the notes that were analyzed.'
-}`;
+Write in freeform style and end with a "Notes Referenced" section listing all the notes that were analyzed.`;
 
-		const notesReferencedSection = this.generateNotesReferencedSection(notes);
-		const fullPrompt = `${systemPrompt}\n\n${summariesContent}\n\n${instructionPrompt}\n\n${notesReferencedSection}`;
+		const fullPrompt = `${systemPrompt}\n\n${summariesContent}\n\n${instructionPrompt}`;
 		
 		return {
 			content: fullPrompt,
