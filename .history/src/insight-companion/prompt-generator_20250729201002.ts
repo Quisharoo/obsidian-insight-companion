@@ -145,10 +145,10 @@ When referencing notes in your analysis:
 - Group related insights by theme rather than by individual note
 
 		Approach:
-- Call out what you actually see, not what you think might be implied
-- If something shows up repeatedly, it matters — no need to overthink why
-- Flag things that feel unfinished or unresolved, but don't fill in the blanks
-- Point out next steps that make sense based on what's written, not what looks strategic`;
+- Only call out what you actually see, not what you think might be implied
+- If something keeps showing up, it's probably worth mentioning — but don't overthink it
+- Note things that feel unfinished or unresolved, but don't assume what the person was thinking
+- Suggest next steps that flow naturally from what's written, not what seems strategic`;
 
 		// Add focus areas if specified
 		if (config.focusAreas && config.focusAreas.length > 0) {

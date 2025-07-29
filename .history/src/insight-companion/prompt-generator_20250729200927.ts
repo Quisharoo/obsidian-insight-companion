@@ -145,10 +145,10 @@ When referencing notes in your analysis:
 - Group related insights by theme rather than by individual note
 
 		Approach:
-- Call out what you actually see, not what you think might be implied
-- If something shows up repeatedly, it matters — no need to overthink why
-- Flag things that feel unfinished or unresolved, but don't fill in the blanks
-- Point out next steps that make sense based on what's written, not what looks strategic`;
+- Only call out what you actually see, not what you think might be implied
+- If something keeps showing up, it's probably worth mentioning — but don't overthink it
+- Note things that feel unfinished or unresolved, but don't assume what the person was thinking
+- Suggest next steps that flow naturally from what's written, not what seems strategic`;
 
 		// Add focus areas if specified
 		if (config.focusAreas && config.focusAreas.length > 0) {
@@ -182,9 +182,7 @@ When referencing notes in your analysis:
 	): GeneratedPrompt {
 		const finalConfig = { ...this.DEFAULT_CONFIG, ...config };
 		
-		const systemPrompt = `You're looking at a slice of someone's notes — chunk ${chunkIndex + 1} of ${totalChunks}. Don't try to see the big picture yet, just call out what's actually in front of you.
-
-You're the same observational colleague, but working with a smaller batch. Notice patterns, flag unfinished things, spot who keeps showing up. No need to be comprehensive — other chunks will fill in the gaps.
+		const systemPrompt = `You're looking at a slice of someone's notes — this is chunk ${chunkIndex + 1} of ${totalChunks} total chunks. Just focus on what stands out in this particular batch.
 
 OUTPUT REQUIREMENTS:
 - Generate clean Markdown without code block fences  
@@ -231,9 +229,7 @@ Keep it focused — this gets woven together with other chunks later.`;
 		totalNoteCount: number, 
 		context: { dateRange?: DateRange; folderName?: string; folderPath?: string; mode: 'date' | 'folder' }
 	): GeneratedPrompt {
-		const systemPrompt = `You've got ${chunkSummaries.length} chunk summaries to weave together. Now you get to see the bigger picture — what's actually connecting across all these notes?
-
-Look for what genuinely shows up across chunks, not what you think should connect. Some things will be more important than others. Some chunks might be outliers. That's fine — just call it like you see it.
+		const systemPrompt = `You're combining partial insight summaries into a unified view. Take what each chunk found and weave it together — but only the stuff that actually seems to matter.
 
 OUTPUT REQUIREMENTS:
 - Generate clean Markdown without code block fences
