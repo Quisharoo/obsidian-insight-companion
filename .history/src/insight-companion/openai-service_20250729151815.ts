@@ -258,13 +258,6 @@ export class OpenAIService {
 	}
 
 	/**
-	 * Get the current model being used
-	 */
-	getCurrentModel(): string {
-		return this.config.model || OpenAIModelUtils.DEFAULT_TURBO_MODEL;
-	}
-
-	/**
 	 * Update the configuration
 	 */
 	updateConfig(newConfig: Partial<OpenAIConfig>): void {

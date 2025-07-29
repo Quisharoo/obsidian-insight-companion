@@ -234,14 +234,8 @@ export class ConfirmationModal extends Modal {
 			cls: 'cost-breakdown'
 		});
 
-		// Show appropriate pricing disclaimer based on model type
-		const modelName = costEstimate.modelType === 'turbo' ? 'GPT-4 Turbo' : 'GPT-4';
-		const pricingInfo = costEstimate.modelType === 'turbo' 
-			? '$0.01/1K input, $0.03/1K output'
-			: '$0.03/1K input, $0.06/1K output';
-
 		costSection.createEl('p', { 
-			text: `Based on ${modelName} pricing (${pricingInfo}). Actual costs may vary.`,
+			text: 'Based on GPT-4 pricing. Actual costs may vary.',
 			cls: 'cost-disclaimer'
 		});
 	}

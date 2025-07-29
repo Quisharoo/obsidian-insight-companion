@@ -49,7 +49,7 @@ describe('OpenAIService', () => {
 					completion_tokens: 20,
 					total_tokens: 30
 				},
-				model: 'gpt-4-0125-preview' // Updated to reflect Turbo upgrade
+				model: 'gpt-4'
 			};
 
 			mockFetch.mockResolvedValueOnce({
@@ -66,7 +66,7 @@ describe('OpenAIService', () => {
 					completion: 20,
 					total: 30
 				},
-				model: 'gpt-4-0125-preview'
+				model: 'gpt-4'
 			});
 
 			expect(mockFetch).toHaveBeenCalledWith(
@@ -78,7 +78,7 @@ describe('OpenAIService', () => {
 						'Authorization': 'Bearer sk-test-api-key'
 					},
 					body: JSON.stringify({
-						model: 'gpt-4-0125-preview', // Updated to reflect Turbo upgrade
+						model: 'gpt-4',
 						messages: [{
 							role: 'user',
 							content: 'Test prompt'
@@ -317,97 +317,6 @@ describe('OpenAIService', () => {
 					type: 'unknown',
 					retryable: true
 				});
-		});
-	});
-
-	describe('GPT-4 Turbo Model Upgrade', () => {
-		test('should use GPT-4 Turbo by default when no model specified', () => {
-			const config: OpenAIConfig = { apiKey: 'test-key' };
-			const openaiService = new OpenAIService(config);
-
-			expect(openaiService.getCurrentModel()).toBe('gpt-4-0125-preview');
-		});
-
-		test('should upgrade legacy GPT-4 to Turbo', () => {
-			const config: OpenAIConfig = { 
-				apiKey: 'test-key',
-				model: 'gpt-4'
-			};
-			const openaiService = new OpenAIService(config);
-
-			expect(openaiService.getCurrentModel()).toBe('gpt-4-0125-preview');
-		});
-
-		test('should upgrade GPT-4-0613 to Turbo', () => {
-			const config: OpenAIConfig = { 
-				apiKey: 'test-key',
-				model: 'gpt-4-0613'
-			};
-			const openaiService = new OpenAIService(config);
-
-			expect(openaiService.getCurrentModel()).toBe('gpt-4-0125-preview');
-		});
-
-		test('should preserve existing Turbo model when specified', () => {
-			const config: OpenAIConfig = { 
-				apiKey: 'test-key',
-				model: 'gpt-4-1106-preview'
-			};
-			const openaiService = new OpenAIService(config);
-
-			expect(openaiService.getCurrentModel()).toBe('gpt-4-1106-preview');
-		});
-
-		test('should preserve custom Turbo model', () => {
-			const config: OpenAIConfig = { 
-				apiKey: 'test-key',
-				model: 'gpt-4-turbo'
-			};
-			const openaiService = new OpenAIService(config);
-
-			expect(openaiService.getCurrentModel()).toBe('gpt-4-turbo');
-		});
-
-		test('should preserve non-standard but Turbo-named models', () => {
-			const config: OpenAIConfig = { 
-				apiKey: 'test-key',
-				model: 'gpt-4-turbo-custom'
-			};
-			const openaiService = new OpenAIService(config);
-
-			expect(openaiService.getCurrentModel()).toBe('gpt-4-turbo-custom');
-		});
-	});
-
-	describe('OpenAIModelUtils', () => {
-		test('should correctly identify Turbo models', () => {
-			expect(OpenAIModelUtils.isTurboModel('gpt-4-0125-preview')).toBe(true);
-			expect(OpenAIModelUtils.isTurboModel('gpt-4-1106-preview')).toBe(true);
-			expect(OpenAIModelUtils.isTurboModel('gpt-4-turbo')).toBe(true);
-			expect(OpenAIModelUtils.isTurboModel('gpt-4-turbo-preview')).toBe(true);
-			expect(OpenAIModelUtils.isTurboModel('gpt-4-turbo-custom')).toBe(true);
-		});
-
-		test('should correctly identify legacy models', () => {
-			expect(OpenAIModelUtils.isTurboModel('gpt-4')).toBe(false);
-			expect(OpenAIModelUtils.isTurboModel('gpt-4-0613')).toBe(false);
-			expect(OpenAIModelUtils.isTurboModel('gpt-3.5-turbo')).toBe(true); // Has turbo in name
-		});
-
-		test('should identify models that need upgrading', () => {
-			expect(OpenAIModelUtils.shouldUpgradeModel()).toBe(true); // No model
-			expect(OpenAIModelUtils.shouldUpgradeModel('gpt-4')).toBe(true);
-			expect(OpenAIModelUtils.shouldUpgradeModel('gpt-4-0613')).toBe(true);
-			expect(OpenAIModelUtils.shouldUpgradeModel('gpt-4-0125-preview')).toBe(false);
-			expect(OpenAIModelUtils.shouldUpgradeModel('gpt-4-turbo')).toBe(false);
-		});
-
-		test('should return optimal model for various inputs', () => {
-			expect(OpenAIModelUtils.getOptimalModel()).toBe('gpt-4-0125-preview');
-			expect(OpenAIModelUtils.getOptimalModel('gpt-4')).toBe('gpt-4-0125-preview');
-			expect(OpenAIModelUtils.getOptimalModel('gpt-4-0613')).toBe('gpt-4-0125-preview');
-			expect(OpenAIModelUtils.getOptimalModel('gpt-4-1106-preview')).toBe('gpt-4-1106-preview');
-			expect(OpenAIModelUtils.getOptimalModel('gpt-4-turbo')).toBe('gpt-4-turbo');
 		});
 	});
 }); 

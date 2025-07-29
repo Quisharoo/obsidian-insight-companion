@@ -78,10 +78,11 @@ export class OpenAIService {
 		const optimalModel = OpenAIModelUtils.getOptimalModel(config.model);
 		
 		this.config = {
+			model: optimalModel,
 			maxTokens: 4096,
 			temperature: 0.7,
 			...config,
-			// Ensure model is set to the optimal choice (override user config if needed)
+			// Ensure model is set to the optimal choice
 			model: optimalModel
 		};
 
@@ -255,13 +256,6 @@ export class OpenAIService {
 				error: openaiError.message 
 			};
 		}
-	}
-
-	/**
-	 * Get the current model being used
-	 */
-	getCurrentModel(): string {
-		return this.config.model || OpenAIModelUtils.DEFAULT_TURBO_MODEL;
 	}
 
 	/**

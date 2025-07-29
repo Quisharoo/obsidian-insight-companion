@@ -92,9 +92,9 @@ export default class InsightCompanionPlugin extends Plugin {
 			// Check token limits and provide recommendations
 			const limitCheck = TokenEstimator.checkTokenLimits(tokenEstimate.totalTokens);
 			
-			// Estimate cost based on current model
-			const currentModel = this.openaiService?.getCurrentModel();
-			const costEstimate = TokenEstimator.estimateCost(tokenEstimate.totalTokens, currentModel);
+					// Estimate cost based on current model
+		const currentModel = this.openaiService?.getCurrentModel();
+		const costEstimate = TokenEstimator.estimateCost(tokenEstimate.totalTokens, currentModel);
 
 			// Show confirmation dialog with note count and token estimate
 			const confirmationData: ConfirmationData = {

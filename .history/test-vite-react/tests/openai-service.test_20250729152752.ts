@@ -49,7 +49,7 @@ describe('OpenAIService', () => {
 					completion_tokens: 20,
 					total_tokens: 30
 				},
-				model: 'gpt-4-0125-preview' // Updated to reflect Turbo upgrade
+				model: 'gpt-4'
 			};
 
 			mockFetch.mockResolvedValueOnce({
@@ -66,7 +66,7 @@ describe('OpenAIService', () => {
 					completion: 20,
 					total: 30
 				},
-				model: 'gpt-4-0125-preview'
+				model: 'gpt-4'
 			});
 
 			expect(mockFetch).toHaveBeenCalledWith(
@@ -78,7 +78,7 @@ describe('OpenAIService', () => {
 						'Authorization': 'Bearer sk-test-api-key'
 					},
 					body: JSON.stringify({
-						model: 'gpt-4-0125-preview', // Updated to reflect Turbo upgrade
+						model: 'gpt-4',
 						messages: [{
 							role: 'user',
 							content: 'Test prompt'

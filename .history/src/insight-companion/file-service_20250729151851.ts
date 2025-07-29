@@ -165,7 +165,7 @@ export class FileService {
 		generatedAt: string;
 	}): string {
 		const durationSeconds = (metadata.generationTime / 1000).toFixed(1);
-		const costEstimate = this.estimateActualCost(metadata.tokensUsed, metadata.model);
+		const costEstimate = this.estimateActualCost(metadata.tokensUsed);
 
 		return `# Insight Summary Metadata
 
