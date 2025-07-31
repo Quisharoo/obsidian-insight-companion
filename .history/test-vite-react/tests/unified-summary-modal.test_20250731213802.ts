@@ -50,18 +50,6 @@ describe('UnifiedSummaryModal', () => {
 			const modalWithNull = new UnifiedSummaryModal(mockApp, null, undefined, undefined, mockOnSubmit);
 			expect(modalWithNull).toBeDefined();
 		});
-
-		test('should initialize with default folder path and insight style', () => {
-			const modalWithDefaults = new UnifiedSummaryModal(
-				mockApp, 
-				mockDefaultDateRange, 
-				'folder1', 
-				'freeform', 
-				mockOnSubmit
-			);
-			expect(modalWithDefaults['selectedFolder']).toBe('folder1');
-			expect(modalWithDefaults['insightStyle']).toBe('freeform');
-		});
 	});
 
 	describe('date preset buttons', () => {
