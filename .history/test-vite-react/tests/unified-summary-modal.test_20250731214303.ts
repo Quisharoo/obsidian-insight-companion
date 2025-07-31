@@ -256,64 +256,6 @@ describe('UnifiedSummaryModal', () => {
 		});
 	});
 
-	describe('clearAllFilters', () => {
-		beforeEach(() => {
-			// Mock DOM elements
-			modal['startDateInput'] = { value: '' } as any;
-			modal['endDateInput'] = { value: '' } as any;
-			modal['folderDropdown'] = { value: '' } as any;
-			modal['errorEl'] = { textContent: '', style: { display: 'none' } } as any;
-			modal['filterSummaryEl'] = { 
-				empty: jest.fn(), 
-				createEl: jest.fn().mockReturnValue({ textContent: '' }) 
-			} as any;
-		});
-
-		test('should clear all filter values', () => {
-			// Set initial values
-			modal['startDate'] = '2025-01-01';
-			modal['endDate'] = '2025-01-31';
-			modal['selectedFolder'] = 'folder1';
-			modal['insightStyle'] = 'freeform';
-
-			// Mock input elements
-			modal['startDateInput'].value = '2025-01-01';
-			modal['endDateInput'].value = '2025-01-31';
-			modal['folderDropdown'].value = 'folder1';
-
-			// Call clearAllFilters
-			modal['clearAllFilters']();
-
-			// Verify all values are cleared
-			expect(modal['startDate']).toBe('');
-			expect(modal['endDate']).toBe('');
-			expect(modal['selectedFolder']).toBe('');
-			expect(modal['insightStyle']).toBe('structured');
-
-			// Verify input elements are cleared
-			expect(modal['startDateInput'].value).toBe('');
-			expect(modal['endDateInput'].value).toBe('');
-			expect(modal['folderDropdown'].value).toBe('');
-		});
-
-		test('should call validation and update methods', () => {
-			// Spy on the methods
-			const validateSpy = jest.spyOn(modal as any, 'validateInputs');
-			const updateSpy = jest.spyOn(modal as any, 'updateFilterSummary');
-
-			// Call clearAllFilters
-			modal['clearAllFilters']();
-
-			// Verify methods were called
-			expect(validateSpy).toHaveBeenCalled();
-			expect(updateSpy).toHaveBeenCalled();
-
-			// Clean up spies
-			validateSpy.mockRestore();
-			updateSpy.mockRestore();
-		});
-	});
-
 	describe('onClose', () => {
 		test('should have onClose method', () => {
 			expect(typeof modal.onClose).toBe('function');

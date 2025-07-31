@@ -262,7 +262,6 @@ describe('UnifiedSummaryModal', () => {
 			modal['startDateInput'] = { value: '' } as any;
 			modal['endDateInput'] = { value: '' } as any;
 			modal['folderDropdown'] = { value: '' } as any;
-			modal['errorEl'] = { textContent: '', style: { display: 'none' } } as any;
 			modal['filterSummaryEl'] = { 
 				empty: jest.fn(), 
 				createEl: jest.fn().mockReturnValue({ textContent: '' }) 
