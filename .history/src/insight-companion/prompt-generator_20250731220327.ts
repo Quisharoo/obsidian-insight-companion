@@ -375,21 +375,23 @@ You're allowed to be dry. Observational. Even funny — in that "I've seen this 
 - [[Note One]]: one-liner observation, quote, or dry fallback
 - [[Another Note]]: what stood out or felt odd`;
 		} else if (finalConfig.insightStyle === 'succinct') {
-			systemPrompt = `You're an assistant summarising a group of notes. Be concise, factual, and neutral. Your goal is to produce a clear, readable summary that reflects the key contents of the notes — without guessing intent or adding interpretation.
+			systemPrompt = `${basePersonality}
 
-- Group related topics together where possible  
-- Use short, declarative sentences  
-- Avoid storytelling, editorial tone, or humor  
-- Do not speculate or generalize beyond what's in the notes  
-- Use Markdown with headings and bullet points for clarity
+📋 OUTPUT INSTRUCTIONS:
+- Write in a concise, direct tone
+- Focus on the most important observations and connections
+- Use precise, actionable language
+- Avoid fluff and excessive detail
+- Use [[Note Title]] links for references (no .md)
+- Mention what patterns, contradictions, unresolved bits you notice
+- Be observational, not summarizing each note
+- Encourage natural flow and grouping, but do not require labels or bullet points
 
-Use [[Note Title]] to reference any specific notes.
+**End your response with a "Notes Referenced" section using this format:**
 
-**End with a list of referenced notes like this:**
-
-## Notes Referenced  
-- [[Note One]]: Key topic or quote  
-- [[Note Two]]: Relevant item from content`;
+## Notes Referenced
+- [[Note One]]: one-liner observation, quote, or dry fallback
+- [[Another Note]]: what stood out or felt odd`;
 		} else {
 			// Structured format (default)
 			systemPrompt = `${basePersonality}

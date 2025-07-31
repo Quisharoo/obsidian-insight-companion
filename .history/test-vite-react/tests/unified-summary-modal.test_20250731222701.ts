@@ -64,33 +64,6 @@ describe('UnifiedSummaryModal', () => {
 			expect(modalWithDefaults['selectedFolder']).toBe('folder1');
 			expect(modalWithDefaults['insightStyle']).toBe('freeform');
 		});
-
-		test('should initialize with default excluded metadata when none provided', () => {
-			const modalWithDefaults = new UnifiedSummaryModal(
-				mockApp, 
-				mockDefaultDateRange, 
-				undefined, 
-				undefined,
-				undefined,
-				undefined,
-				mockOnSubmit
-			);
-			expect(modalWithDefaults['excludedMetadata']).toEqual(['summarise: false']);
-		});
-
-		test('should use provided excluded metadata when available', () => {
-			const customExcludedMetadata = ['#private', 'status: draft'];
-			const modalWithCustom = new UnifiedSummaryModal(
-				mockApp, 
-				mockDefaultDateRange, 
-				undefined, 
-				undefined,
-				undefined,
-				customExcludedMetadata,
-				mockOnSubmit
-			);
-			expect(modalWithCustom['excludedMetadata']).toEqual(customExcludedMetadata);
-		});
 	});
 
 	describe('date preset buttons', () => {
@@ -333,9 +306,6 @@ describe('UnifiedSummaryModal', () => {
 			expect(modal['startDateInput'].value).toBe('');
 			expect(modal['endDateInput'].value).toBe('');
 			expect(modal['folderDropdown'].value).toBe('');
-			
-			// Verify excluded metadata is reset to default
-			expect(modal['excludedMetadata']).toEqual(['summarise: false']);
 		});
 
 		test('should call validation and update methods', () => {
@@ -359,55 +329,6 @@ describe('UnifiedSummaryModal', () => {
 	describe('onClose', () => {
 		test('should have onClose method', () => {
 			expect(typeof modal.onClose).toBe('function');
-		});
-	});
-
-	describe('default excluded metadata behavior', () => {
-		test('should initialize with summarise: false as default', () => {
-			const modalWithDefaults = new UnifiedSummaryModal(
-				mockApp, 
-				null, 
-				undefined, 
-				undefined,
-				undefined,
-				undefined,
-				mockOnSubmit
-			);
-			expect(modalWithDefaults['excludedMetadata']).toEqual(['summarise: false']);
-		});
-
-		test('should preserve user custom excluded metadata', () => {
-			const customExcludedMetadata = ['#private', 'status: draft'];
-			const modalWithCustom = new UnifiedSummaryModal(
-				mockApp, 
-				null, 
-				undefined, 
-				undefined,
-				undefined,
-				customExcludedMetadata,
-				mockOnSubmit
-			);
-			expect(modalWithCustom['excludedMetadata']).toEqual(customExcludedMetadata);
-		});
-
-		test('should reset to default when clearing filters', () => {
-			// Set custom excluded metadata
-			modal['excludedMetadata'] = ['#private', 'status: draft'];
-			
-			// Mock textarea and error element
-			modal['excludedMetadataTextarea'] = { value: '#private\nstatus: draft' } as any;
-			modal['errorEl'] = { textContent: '', style: { display: 'none' } } as any;
-			modal['filterSummaryEl'] = { 
-				empty: jest.fn(), 
-				createEl: jest.fn().mockReturnValue({ textContent: '' }) 
-			} as any;
-			
-			// Call clearAllFilters
-			modal['clearAllFilters']();
-			
-			// Should reset to default
-			expect(modal['excludedMetadata']).toEqual(['summarise: false']);
-			expect(modal['excludedMetadataTextarea'].value).toBe('summarise: false');
 		});
 	});
 }); 

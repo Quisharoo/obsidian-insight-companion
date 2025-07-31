@@ -259,7 +259,7 @@ export class NoteFilterService {
 	/**
 	 * Unified filtering method that supports date range, folder, or both filters
 	 */
-	async filterNotes(dateRange?: DateRange, folderPath?: string, folderName?: string, insightStyle: 'structured' | 'freeform' | 'succinct' = 'structured', excludedMetadata: string[] = []): Promise<NoteFilterResult> {
+	async filterNotes(dateRange?: DateRange, folderPath?: string, folderName?: string, insightStyle: 'structured' | 'freeform' = 'structured', excludedMetadata: string[] = []): Promise<NoteFilterResult> {
 		let candidateFiles: TFile[] = [];
 
 		// Step 1: Get initial file set based on folder filter

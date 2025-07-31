@@ -152,9 +152,7 @@ export default class InsightCompanionPlugin extends Plugin {
 					this.openUnifiedSummaryModal(
 						originalSelection.dateRange,
 						originalSelection.folderPath,
-						originalSelection.insightStyle,
-						originalSelection.dateSource,
-						originalSelection.excludedMetadata
+						originalSelection.insightStyle
 					);
 				}
 			}

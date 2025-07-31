@@ -47,7 +47,7 @@ export class UnifiedSummaryModal extends Modal {
 		this.selectedFolder = defaultFolderPath || '';
 		this.insightStyle = defaultInsightStyle || 'structured';
 		this.dateSource = defaultDateSource || defaultDateRange?.dateSource || 'created';
-		this.excludedMetadata = defaultExcludedMetadata || ['summarise: false'];
+		this.excludedMetadata = defaultExcludedMetadata || [];
 		this.onSubmit = onSubmit || (() => {});
 	}
 
@@ -541,9 +541,9 @@ export class UnifiedSummaryModal extends Modal {
 		this.dateSource = 'created';
 		if (this.dateSourceDropdown) this.dateSourceDropdown.value = this.dateSource;
 
-		// Reset excluded metadata to default
-		this.excludedMetadata = ['summarise: false'];
-		if (this.excludedMetadataTextarea) this.excludedMetadataTextarea.value = 'summarise: false';
+		// Clear excluded metadata
+		this.excludedMetadata = [];
+		if (this.excludedMetadataTextarea) this.excludedMetadataTextarea.value = '';
 
 		// Update UI
 		this.validateInputs();

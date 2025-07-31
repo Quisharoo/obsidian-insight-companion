@@ -30,7 +30,7 @@ export class UnifiedSummaryModal extends Modal {
 		app: App, 
 		defaultDateRange: DateRange | null, 
 		defaultFolderPath?: string,
-		defaultInsightStyle?: 'structured' | 'freeform' | 'succinct',
+		defaultInsightStyle?: 'structured' | 'freeform',
 		defaultDateSource?: 'created' | 'modified',
 		defaultExcludedMetadata?: string[],
 		onSubmit?: (result: UnifiedSummaryResult) => void
@@ -47,7 +47,7 @@ export class UnifiedSummaryModal extends Modal {
 		this.selectedFolder = defaultFolderPath || '';
 		this.insightStyle = defaultInsightStyle || 'structured';
 		this.dateSource = defaultDateSource || defaultDateRange?.dateSource || 'created';
-		this.excludedMetadata = defaultExcludedMetadata || ['summarise: false'];
+		this.excludedMetadata = defaultExcludedMetadata || [];
 		this.onSubmit = onSubmit || (() => {});
 	}
 
@@ -371,12 +371,11 @@ export class UnifiedSummaryModal extends Modal {
 			.setName('Output Style')
 			.setDesc('Choose the format for your insight summary')
 			.addDropdown(dropdown => {
-				dropdown.addOption('structured', 'Structured (Grouped Insights)');
-				dropdown.addOption('freeform', 'Freeform (Observational Memo)');
-				dropdown.addOption('succinct', 'Succinct (Factual Summary)');
+				dropdown.addOption('structured', 'Structured (Clear headings like Themes, People, Actions)');
+				dropdown.addOption('freeform', 'Freeform (Memo-style summary with natural flow, only required heading is Notes Referenced)');
 				dropdown.setValue(this.insightStyle);
 				dropdown.onChange(value => {
-					this.insightStyle = value as 'structured' | 'freeform' | 'succinct';
+					this.insightStyle = value as 'structured' | 'freeform';
 					this.updateFilterSummary();
 				});
 			});
@@ -541,9 +540,9 @@ export class UnifiedSummaryModal extends Modal {
 		this.dateSource = 'created';
 		if (this.dateSourceDropdown) this.dateSourceDropdown.value = this.dateSource;
 
-		// Reset excluded metadata to default
-		this.excludedMetadata = ['summarise: false'];
-		if (this.excludedMetadataTextarea) this.excludedMetadataTextarea.value = 'summarise: false';
+		// Clear excluded metadata
+		this.excludedMetadata = [];
+		if (this.excludedMetadataTextarea) this.excludedMetadataTextarea.value = '';
 
 		// Update UI
 		this.validateInputs();

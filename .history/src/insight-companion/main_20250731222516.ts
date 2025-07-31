@@ -72,7 +72,7 @@ export default class InsightCompanionPlugin extends Plugin {
 			defaultFolderPath,
 			defaultInsightStyle,
 			defaultDateSource,
-			defaultExcludedMetadata || this.settings.lastExcludedMetadata,
+			defaultExcludedMetadata,
 			(result: UnifiedSummaryResult) => {
 				this.handleUnifiedSelection(result);
 			}
@@ -87,11 +87,8 @@ export default class InsightCompanionPlugin extends Plugin {
 		// Cache the selected date range if provided
 		if (result.dateRange) {
 			this.settings.lastDateRange = result.dateRange;
+			await this.saveSettings();
 		}
-		
-		// Cache the excluded metadata
-		this.settings.lastExcludedMetadata = result.excludedMetadata;
-		await this.saveSettings();
 		
 		try {
 			// Use the unified filtering method
@@ -152,9 +149,7 @@ export default class InsightCompanionPlugin extends Plugin {
 					this.openUnifiedSummaryModal(
 						originalSelection.dateRange,
 						originalSelection.folderPath,
-						originalSelection.insightStyle,
-						originalSelection.dateSource,
-						originalSelection.excludedMetadata
+						originalSelection.insightStyle
 					);
 				}
 			}

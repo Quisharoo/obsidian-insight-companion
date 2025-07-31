@@ -750,12 +750,6 @@ describe('PromptGenerator', () => {
 			expect(freeformResult.content).toContain('**End your response with a "Notes Referenced" section using this format:**');
 			expect(freeformResult.content).toContain('- [[Note One]]: one-liner observation, quote, or dry fallback');
 			expect(freeformResult.content).toContain('- [[Another Note]]: what stood out or felt odd');
-
-			// Test succinct style
-			const succinctResult = PromptGenerator.generateInsightPrompt(mockNotes, mockDateContext, { insightStyle: 'succinct' });
-			expect(succinctResult.content).toContain('**End with a list of referenced notes like this:**');
-			expect(succinctResult.content).toContain('- [[Note One]]: Key topic or quote');
-			expect(succinctResult.content).toContain('- [[Note Two]]: Relevant item from content');
 		});
 
 		test('should include Notes Referenced format examples in combineSummariesPrompt', () => {
@@ -784,18 +778,6 @@ describe('PromptGenerator', () => {
 			expect(freeformResult.content).toContain('**End your response with a "Notes Referenced" section using this format:**');
 			expect(freeformResult.content).toContain('- [[Note One]]: one-liner observation, quote, or dry fallback');
 			expect(freeformResult.content).toContain('- [[Another Note]]: what stood out or felt odd');
-
-			// Test succinct style
-			const succinctResult = PromptGenerator.combineSummariesPrompt(
-				chunkSummaries, 
-				4, 
-				mockDateContext, 
-				mockNotes, 
-				{ insightStyle: 'succinct' }
-			);
-			expect(succinctResult.content).toContain('**End with a list of referenced notes like this:**');
-			expect(succinctResult.content).toContain('- [[Note One]]: Key topic or quote');
-			expect(succinctResult.content).toContain('- [[Note Two]]: Relevant item from content');
 		});
 	});
 }); 

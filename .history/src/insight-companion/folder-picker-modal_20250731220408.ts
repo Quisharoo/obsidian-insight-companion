@@ -8,7 +8,7 @@ export interface FolderPickerModalResult {
 
 export class FolderPickerModal extends Modal {
 	private selectedFolder: string = '';
-	private insightStyle: 'structured' | 'freeform' | 'succinct' = 'structured';
+	private insightStyle: 'structured' | 'freeform' = 'structured';
 	private onSubmit: (result: FolderPickerModalResult) => void;
 	private folderDropdown: HTMLSelectElement;
 	private submitButton: HTMLButtonElement;
@@ -57,12 +57,11 @@ export class FolderPickerModal extends Modal {
 			.setName('Insight Style')
 			.setDesc('Choose the format for your insight summary')
 			.addDropdown(dropdown => {
-				dropdown.addOption('structured', 'Structured (Grouped Insights)');
-				dropdown.addOption('freeform', 'Freeform (Observational Memo)');
-				dropdown.addOption('succinct', 'Succinct (Factual Summary)');
+				dropdown.addOption('structured', 'Structured (Clear headings like Themes, People, Actions)');
+				dropdown.addOption('freeform', 'Freeform (Memo-style summary with natural flow, only required heading is Notes Referenced)');
 				dropdown.setValue(this.insightStyle);
 				dropdown.onChange(value => {
-					this.insightStyle = value as 'structured' | 'freeform' | 'succinct';
+					this.insightStyle = value as 'structured' | 'freeform';
 				});
 			});
 

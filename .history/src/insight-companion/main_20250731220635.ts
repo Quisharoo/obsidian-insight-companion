@@ -13,14 +13,12 @@ interface InsightCompanionSettings {
 	lastDateRange: DateRange | null;
 	outputFolder: string;
 	openaiApiKey: string;
-	lastExcludedMetadata: string[];
 }
 
 const DEFAULT_SETTINGS: InsightCompanionSettings = {
 	lastDateRange: null,
 	outputFolder: 'Summaries',
-	openaiApiKey: '',
-	lastExcludedMetadata: ['summarise: false']
+	openaiApiKey: ''
 };
 
 export default class InsightCompanionPlugin extends Plugin {
@@ -72,7 +70,7 @@ export default class InsightCompanionPlugin extends Plugin {
 			defaultFolderPath,
 			defaultInsightStyle,
 			defaultDateSource,
-			defaultExcludedMetadata || this.settings.lastExcludedMetadata,
+			defaultExcludedMetadata,
 			(result: UnifiedSummaryResult) => {
 				this.handleUnifiedSelection(result);
 			}
@@ -87,11 +85,8 @@ export default class InsightCompanionPlugin extends Plugin {
 		// Cache the selected date range if provided
 		if (result.dateRange) {
 			this.settings.lastDateRange = result.dateRange;
+			await this.saveSettings();
 		}
-		
-		// Cache the excluded metadata
-		this.settings.lastExcludedMetadata = result.excludedMetadata;
-		await this.saveSettings();
 		
 		try {
 			// Use the unified filtering method
@@ -152,9 +147,7 @@ export default class InsightCompanionPlugin extends Plugin {
 					this.openUnifiedSummaryModal(
 						originalSelection.dateRange,
 						originalSelection.folderPath,
-						originalSelection.insightStyle,
-						originalSelection.dateSource,
-						originalSelection.excludedMetadata
+						originalSelection.insightStyle
 					);
 				}
 			}
@@ -163,7 +156,7 @@ export default class InsightCompanionPlugin extends Plugin {
 		confirmationModal.open();
 	}
 
-	private async proceedWithSummaryGeneration(filterResult: NoteFilterResult, tokenEstimate: TokenEstimate, insightStyle?: 'structured' | 'freeform' | 'succinct') {
+	private async proceedWithSummaryGeneration(filterResult: NoteFilterResult, tokenEstimate: TokenEstimate, insightStyle?: 'structured' | 'freeform') {
 		console.log('Proceeding with summary generation...');
 		console.log(`Processing ${filterResult.totalCount} notes with ${tokenEstimate.totalTokens} estimated tokens`);
 		

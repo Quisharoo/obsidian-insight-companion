@@ -394,13 +394,8 @@ describe('UnifiedSummaryModal', () => {
 			// Set custom excluded metadata
 			modal['excludedMetadata'] = ['#private', 'status: draft'];
 			
-			// Mock textarea and error element
+			// Mock textarea
 			modal['excludedMetadataTextarea'] = { value: '#private\nstatus: draft' } as any;
-			modal['errorEl'] = { textContent: '', style: { display: 'none' } } as any;
-			modal['filterSummaryEl'] = { 
-				empty: jest.fn(), 
-				createEl: jest.fn().mockReturnValue({ textContent: '' }) 
-			} as any;
 			
 			// Call clearAllFilters
 			modal['clearAllFilters']();
