@@ -24,10 +24,14 @@ describe('ConfirmationModal', () => {
 				dateRange: { startDate: '2025-01-01', endDate: '2025-01-31', insightStyle: 'structured' },
 				folderName: 'Test Folder',
 				folderPath: 'test-folder',
+				dateSource: 'created',
+				excludedMetadata: [],
 				filterMeta: {
 					folderPath: 'test-folder',
 					dateRange: { start: new Date('2025-01-01'), end: new Date('2025-01-31') },
-					insightStyle: 'structured'
+					insightStyle: 'structured',
+					dateSource: 'created',
+					excludedMetadata: []
 				}
 			},
 			tokenEstimate: {

@@ -68,7 +68,9 @@ describe('Unified Filtering', () => {
 					start: expect.any(Date), 
 					end: expect.any(Date) 
 				},
-				insightStyle: 'structured'
+				insightStyle: 'structured',
+				dateSource: 'created',
+				excludedMetadata: []
 			});
 		});
 
@@ -88,7 +90,9 @@ describe('Unified Filtering', () => {
 					start: expect.any(Date), 
 					end: expect.any(Date) 
 				},
-				insightStyle: 'structured'
+				insightStyle: 'structured',
+				dateSource: 'created',
+				excludedMetadata: []
 			});
 		});
 	});
@@ -104,7 +108,9 @@ describe('Unified Filtering', () => {
 			expect(result.dateRange).toBeUndefined();
 			expect(result.filterMeta).toEqual({
 				folderPath: 'folder1',
-				insightStyle: 'freeform'
+				insightStyle: 'freeform',
+				dateSource: 'created',
+				excludedMetadata: []
 			});
 		});
 
@@ -116,7 +122,9 @@ describe('Unified Filtering', () => {
 			expect(result.folderPath).toBe('');
 			expect(result.folderName).toBe('Vault Root');
 			expect(result.filterMeta).toEqual({
-				insightStyle: 'structured'
+				insightStyle: 'structured',
+				dateSource: 'created',
+				excludedMetadata: []
 			});
 		});
 
@@ -129,7 +137,9 @@ describe('Unified Filtering', () => {
 			expect(result.totalCount).toBe(0);
 			expect(result.filterMeta).toEqual({
 				folderPath: 'nonexistent',
-				insightStyle: 'structured'
+				insightStyle: 'structured',
+				dateSource: 'created',
+				excludedMetadata: []
 			});
 		});
 	});
@@ -155,7 +165,9 @@ describe('Unified Filtering', () => {
 					end: expect.any(Date) 
 				},
 				folderPath: 'folder1',
-				insightStyle: 'structured'
+				insightStyle: 'structured',
+				dateSource: 'created',
+				excludedMetadata: []
 			});
 		});
 
@@ -176,7 +188,9 @@ describe('Unified Filtering', () => {
 					end: expect.any(Date) 
 				},
 				folderPath: 'folder1',
-				insightStyle: 'structured'
+				insightStyle: 'structured',
+				dateSource: 'created',
+				excludedMetadata: []
 			});
 		});
 	});
@@ -190,7 +204,9 @@ describe('Unified Filtering', () => {
 			expect(result.dateRange).toBeUndefined();
 			expect(result.folderPath).toBeUndefined();
 			expect(result.filterMeta).toEqual({
-				insightStyle: 'structured'
+				insightStyle: 'structured',
+				dateSource: 'created',
+				excludedMetadata: []
 			});
 		});
 	});

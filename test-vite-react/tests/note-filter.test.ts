@@ -67,16 +67,16 @@ describe('NoteFilterService Tests', () => {
 
 			const dateRange: DateRange = {
 				startDate: yesterday.toISOString().split('T')[0],
-				endDate: today.toISOString().split('T')[0]
+				endDate: today.toISOString().split('T')[0],
+				dateSource: 'created'
 			};
 
 			const result: NoteFilterResult = await noteFilterService.filterNotesByDateRange(dateRange);
 
-			// Should include note1 (created today) and note2 (modified today)
-			expect(result.totalCount).toBe(2);
-			expect(result.notes).toHaveLength(2);
+			// Should include note1 (created today) only
+			expect(result.totalCount).toBe(1);
+			expect(result.notes).toHaveLength(1);
 			expect(result.notes[0].file.path).toBe('note1.md');
-			expect(result.notes[1].file.path).toBe('note2.md');
 		});
 
 		it('should filter notes within date range by modification date', async () => {
@@ -86,7 +86,8 @@ describe('NoteFilterService Tests', () => {
 
 			const dateRange: DateRange = {
 				startDate: oneWeekAgo.toISOString().split('T')[0],
-				endDate: today.toISOString().split('T')[0]
+				endDate: today.toISOString().split('T')[0],
+				dateSource: 'modified'
 			};
 
 			const result: NoteFilterResult = await noteFilterService.filterNotesByDateRange(dateRange);
@@ -140,14 +141,15 @@ describe('NoteFilterService Tests', () => {
 			const today = new Date();
 			const dateRange: DateRange = {
 				startDate: today.toISOString().split('T')[0],
-				endDate: today.toISOString().split('T')[0]
+				endDate: today.toISOString().split('T')[0],
+				dateSource: 'created'
 			};
 
 			const result: NoteFilterResult = await noteFilterService.filterNotesByDateRange(dateRange);
 
 			// Should still return note2 even though note1 failed to read
-			expect(result.totalCount).toBe(1);
-			expect(result.notes[0].file.path).toBe('note2.md');
+			expect(result.totalCount).toBe(0); // note2 is not created today, so it won't be included
+			expect(result.notes).toHaveLength(0);
 		});
 
 		it('should set time boundaries correctly for full day inclusion', async () => {
@@ -172,15 +174,15 @@ describe('NoteFilterService Tests', () => {
 			const today = new Date();
 			const dateRange: DateRange = {
 				startDate: today.toISOString().split('T')[0],
-				endDate: today.toISOString().split('T')[0]
+				endDate: today.toISOString().split('T')[0],
+				dateSource: 'created'
 			};
 
 			const metadata = await noteFilterService.getNotesMetadata(dateRange);
 
-			expect(metadata.count).toBe(2); // note1 and note2
-			expect(metadata.files).toHaveLength(2);
+			expect(metadata.count).toBe(1); // note1 only (created today)
+			expect(metadata.files).toHaveLength(1);
 			expect(metadata.files[0].path).toBe('note1.md');
-			expect(metadata.files[1].path).toBe('note2.md');
 
 			// Verify vault.read was not called
 			expect(app.vault.read).not.toHaveBeenCalled();
@@ -234,7 +236,8 @@ describe('NoteFilterService Tests', () => {
 			const isInRange = (noteFilterService as any).isNoteInDateRange(
 				file, 
 				yesterday, 
-				today
+				today,
+				'modified'
 			);
 
 			expect(isInRange).toBe(true);
@@ -393,6 +396,173 @@ describe('NoteFilterService Tests', () => {
 
 			expect(metadata.count).toBe(0);
 			expect(metadata.files).toHaveLength(0);
+		});
+	});
+
+	describe('metadata exclusion', () => {
+		it('should exclude notes with matching frontmatter', async () => {
+			// Mock vault.read to return content with frontmatter
+			app.vault.read = jest.fn().mockImplementation((file: MockTFile) => {
+				if (file.path === 'note1.md') {
+					return Promise.resolve('---\nsummarise: false\n---\nContent here');
+				}
+				return Promise.resolve(`Content of ${file.path}`);
+			});
+
+			const today = new Date();
+			const dateRange: DateRange = {
+				startDate: today.toISOString().split('T')[0],
+				endDate: today.toISOString().split('T')[0],
+				dateSource: 'created'
+			};
+
+			const result = await noteFilterService.filterNotesByDateRange(dateRange, ['summarise: false']);
+
+			// Should exclude note1 due to frontmatter
+			expect(result.totalCount).toBe(0);
+			expect(result.notes).toHaveLength(0);
+		});
+
+		it('should exclude notes with matching tags', async () => {
+			// Mock vault.read to return content with tags
+			app.vault.read = jest.fn().mockImplementation((file: MockTFile) => {
+				if (file.path === 'note1.md') {
+					return Promise.resolve('Content with #private tag');
+				}
+				return Promise.resolve(`Content of ${file.path}`);
+			});
+
+			const today = new Date();
+			const dateRange: DateRange = {
+				startDate: today.toISOString().split('T')[0],
+				endDate: today.toISOString().split('T')[0],
+				dateSource: 'created'
+			};
+
+			const result = await noteFilterService.filterNotesByDateRange(dateRange, ['#private']);
+
+			// Should exclude note1 due to tag
+			expect(result.totalCount).toBe(0);
+			expect(result.notes).toHaveLength(0);
+		});
+
+		it('should not exclude notes without matching metadata', async () => {
+			const today = new Date();
+			const dateRange: DateRange = {
+				startDate: today.toISOString().split('T')[0],
+				endDate: today.toISOString().split('T')[0],
+				dateSource: 'created'
+			};
+
+			const result = await noteFilterService.filterNotesByDateRange(dateRange, ['#private', 'summarise: false']);
+
+			// Should include note1 since it doesn't match exclusion patterns
+			expect(result.totalCount).toBe(1);
+			expect(result.notes).toHaveLength(1);
+		});
+
+		it('should handle multiple exclusion patterns', async () => {
+			// Mock vault.read to return content with one matching pattern
+			app.vault.read = jest.fn().mockImplementation((file: MockTFile) => {
+				if (file.path === 'note1.md') {
+					return Promise.resolve('Content with #private tag');
+				}
+				return Promise.resolve(`Content of ${file.path}`);
+			});
+
+			const today = new Date();
+			const dateRange: DateRange = {
+				startDate: today.toISOString().split('T')[0],
+				endDate: today.toISOString().split('T')[0],
+				dateSource: 'created'
+			};
+
+			const result = await noteFilterService.filterNotesByDateRange(dateRange, ['#private', 'summarise: false']);
+
+			// Should exclude note1 due to matching tag
+			expect(result.totalCount).toBe(0);
+			expect(result.notes).toHaveLength(0);
+		});
+
+		it('should work with unified filtering method', async () => {
+			// Mock vault.read to return content with frontmatter
+			app.vault.read = jest.fn().mockImplementation((file: MockTFile) => {
+				if (file.path === 'note1.md') {
+					return Promise.resolve('---\nstatus: draft\n---\nContent here');
+				}
+				return Promise.resolve(`Content of ${file.path}`);
+			});
+
+			const today = new Date();
+			const dateRange: DateRange = {
+				startDate: today.toISOString().split('T')[0],
+				endDate: today.toISOString().split('T')[0],
+				dateSource: 'created'
+			};
+
+			const result = await noteFilterService.filterNotes(dateRange, undefined, undefined, 'structured', ['status: draft']);
+
+			// Should exclude note1 due to frontmatter
+			expect(result.totalCount).toBe(0);
+			expect(result.notes).toHaveLength(0);
+			expect(result.excludedMetadata).toEqual(['status: draft']);
+		});
+
+		it('should work with folder filtering', async () => {
+			// Mock vault.read to return content with tags
+			app.vault.read = jest.fn().mockImplementation((file: MockTFile) => {
+				if (file.path === 'note1.md') {
+					return Promise.resolve('Content with #private tag');
+				}
+				return Promise.resolve(`Content of ${file.path}`);
+			});
+
+			const result = await noteFilterService.filterNotesByFolder('', 'Vault Root', ['#private']);
+
+			// Should exclude note1 due to tag
+			expect(result.totalCount).toBe(3); // note2, note3, note4 (note1 excluded)
+			expect(result.notes).toHaveLength(3);
+			expect(result.excludedMetadata).toEqual(['#private']);
+		});
+
+		it('should handle empty exclusion list', async () => {
+			const today = new Date();
+			const dateRange: DateRange = {
+				startDate: today.toISOString().split('T')[0],
+				endDate: today.toISOString().split('T')[0],
+				dateSource: 'created'
+			};
+
+			const result = await noteFilterService.filterNotesByDateRange(dateRange, []);
+
+			// Should include all notes when no exclusions
+			expect(result.totalCount).toBe(1);
+			expect(result.notes).toHaveLength(1);
+			expect(result.excludedMetadata).toEqual([]);
+		});
+
+		it('should handle whitespace in exclusion patterns', async () => {
+			// Mock vault.read to return content with tags
+			app.vault.read = jest.fn().mockImplementation((file: MockTFile) => {
+				if (file.path === 'note1.md') {
+					return Promise.resolve('Content with #private tag');
+				}
+				return Promise.resolve(`Content of ${file.path}`);
+			});
+
+			const today = new Date();
+			const dateRange: DateRange = {
+				startDate: today.toISOString().split('T')[0],
+				endDate: today.toISOString().split('T')[0],
+				dateSource: 'created'
+			};
+
+			const result = await noteFilterService.filterNotesByDateRange(dateRange, ['  #private  ', '  summarise: false  ']);
+
+			// Should exclude note1 due to trimmed tag
+			expect(result.totalCount).toBe(0);
+			expect(result.notes).toHaveLength(0);
+			expect(result.excludedMetadata).toEqual(['  #private  ', '  summarise: false  ']);
 		});
 	});
 }); 

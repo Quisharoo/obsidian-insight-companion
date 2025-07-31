@@ -109,9 +109,13 @@ describe('OpenAI Integration - End to End', () => {
 	totalCount: mockNotes.length,
 	dateRange: mockDateRange,
 	mode: 'date',
+	dateSource: 'created',
+	excludedMetadata: [],
 	filterMeta: {
 		dateRange: { start: new Date('2025-01-15'), end: new Date('2025-01-20') },
-		insightStyle: 'structured'
+		insightStyle: 'structured',
+		dateSource: 'created',
+		excludedMetadata: []
 	}
 };
 
@@ -278,9 +282,13 @@ The team has made concrete technical decisions including React for frontend deve
 			totalCount: largeNotes.length,
 			dateRange: mockDateRange,
 			mode: 'date',
+			dateSource: 'created',
+			excludedMetadata: [],
 			filterMeta: {
 				dateRange: { start: new Date('2025-01-15'), end: new Date('2025-01-20') },
-				insightStyle: 'structured'
+				insightStyle: 'structured',
+				dateSource: 'created',
+				excludedMetadata: []
 			}
 		};
 

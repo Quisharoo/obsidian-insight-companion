@@ -4,6 +4,7 @@ export interface DateRange {
 	startDate: string;
 	endDate: string;
 	insightStyle?: 'structured' | 'freeform';
+	dateSource?: 'created' | 'modified';
 }
 
 export class DatePickerModal extends Modal {

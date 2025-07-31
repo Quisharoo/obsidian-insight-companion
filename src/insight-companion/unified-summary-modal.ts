@@ -6,6 +6,8 @@ export interface UnifiedSummaryResult {
 	folderPath?: string;
 	folderName?: string;
 	insightStyle: 'structured' | 'freeform';
+	dateSource: 'created' | 'modified';
+	excludedMetadata: string[];
 }
 
 export class UnifiedSummaryModal extends Modal {
@@ -13,10 +15,14 @@ export class UnifiedSummaryModal extends Modal {
 	private endDate: string;
 	private selectedFolder: string = '';
 	private insightStyle: 'structured' | 'freeform' = 'structured';
+	private dateSource: 'created' | 'modified' = 'created';
+	private excludedMetadata: string[] = [];
 	private onSubmit: (result: UnifiedSummaryResult) => void;
 	private startDateInput: HTMLInputElement;
 	private endDateInput: HTMLInputElement;
 	private folderDropdown: HTMLSelectElement;
+	private dateSourceDropdown: HTMLSelectElement;
+	private excludedMetadataTextarea: HTMLTextAreaElement;
 	private errorEl: HTMLElement;
 	private filterSummaryEl: HTMLElement;
 
@@ -25,6 +31,8 @@ export class UnifiedSummaryModal extends Modal {
 		defaultDateRange: DateRange | null, 
 		defaultFolderPath?: string,
 		defaultInsightStyle?: 'structured' | 'freeform',
+		defaultDateSource?: 'created' | 'modified',
+		defaultExcludedMetadata?: string[],
 		onSubmit?: (result: UnifiedSummaryResult) => void
 	) {
 		super(app);
@@ -38,6 +46,8 @@ export class UnifiedSummaryModal extends Modal {
 		this.endDate = defaultDateRange?.endDate || this.formatDate(today);
 		this.selectedFolder = defaultFolderPath || '';
 		this.insightStyle = defaultInsightStyle || 'structured';
+		this.dateSource = defaultDateSource || defaultDateRange?.dateSource || 'created';
+		this.excludedMetadata = defaultExcludedMetadata || [];
 		this.onSubmit = onSubmit || (() => {});
 	}
 
@@ -65,6 +75,12 @@ export class UnifiedSummaryModal extends Modal {
 
 		// Insight Style Section
 		this.createInsightStyleSection(contentEl);
+
+		// Date Source Section
+		this.createDateSourceSection(contentEl);
+
+		// Excluded Metadata Section
+		this.createExcludedMetadataSection(contentEl);
 
 		// Filter Summary Block
 		this.createFilterSummaryBlock(contentEl);
@@ -365,6 +381,48 @@ export class UnifiedSummaryModal extends Modal {
 			});
 	}
 
+	private createDateSourceSection(containerEl: HTMLElement) {
+		const dateSourceSection = containerEl.createEl('div', { cls: 'summary-section' });
+
+		dateSourceSection.createEl('h3', { text: '📅 Date Filter Source' });
+
+		new Setting(dateSourceSection)
+			.setName('Filter Notes By')
+			.setDesc('Choose whether to filter by creation date or last modified date')
+			.addDropdown(dropdown => {
+				this.dateSourceDropdown = dropdown.selectEl;
+				dropdown.addOption('created', 'Created Date');
+				dropdown.addOption('modified', 'Last Modified Date');
+				dropdown.setValue(this.dateSource);
+				dropdown.onChange(value => {
+					this.dateSource = value as 'created' | 'modified';
+					this.updateFilterSummary();
+				});
+			});
+	}
+
+	private createExcludedMetadataSection(containerEl: HTMLElement) {
+		const excludedMetadataSection = containerEl.createEl('div', { cls: 'summary-section' });
+
+		excludedMetadataSection.createEl('h3', { text: '🚫 Exclude Notes' });
+
+		new Setting(excludedMetadataSection)
+			.setName('Exclude Notes With Metadata')
+			.setDesc('Enter patterns to exclude notes (e.g., summarise: false, #private, status: draft). Separate multiple entries with commas or newlines.')
+			.addTextArea(textarea => {
+				this.excludedMetadataTextarea = textarea.inputEl;
+				textarea.setValue(this.excludedMetadata.join('\n'));
+				textarea.setPlaceholder('summarise: false\n#private\nstatus: draft');
+				textarea.onChange(value => {
+					this.excludedMetadata = value
+						.split(/[,\n]/)
+						.map(item => item.trim())
+						.filter(item => item.length > 0);
+					this.updateFilterSummary();
+				});
+			});
+	}
+
 	private createFilterSummaryBlock(containerEl: HTMLElement) {
 		const filterSummaryBlock = containerEl.createEl('div', { cls: 'filter-summary-block' });
 
@@ -478,6 +536,14 @@ export class UnifiedSummaryModal extends Modal {
 		// Reset insight style to default
 		this.insightStyle = 'structured';
 
+		// Reset date source to default
+		this.dateSource = 'created';
+		if (this.dateSourceDropdown) this.dateSourceDropdown.value = this.dateSource;
+
+		// Clear excluded metadata
+		this.excludedMetadata = [];
+		if (this.excludedMetadataTextarea) this.excludedMetadataTextarea.value = '';
+
 		// Update UI
 		this.validateInputs();
 		this.updateFilterSummary();
@@ -533,7 +599,8 @@ export class UnifiedSummaryModal extends Modal {
 		
 		// Add date range filter if set
 		if (this.startDate && this.endDate) {
-			filters.push(`📅 Date Range: ${this.startDate} to ${this.endDate}`);
+			const dateSourceText = this.dateSource === 'created' ? 'Created' : 'Modified';
+			filters.push(`📅 Date Range: ${this.startDate} to ${this.endDate} (${dateSourceText})`);
 		}
 		
 		// Add folder filter if set
@@ -545,6 +612,11 @@ export class UnifiedSummaryModal extends Modal {
 		// Add output style
 		const styleText = this.insightStyle === 'structured' ? 'Structured' : 'Freeform';
 		filters.push(`🎨 Output Style: ${styleText}`);
+		
+		// Add excluded metadata if set
+		if (this.excludedMetadata.length > 0) {
+			filters.push(`🚫 Exclude: ${this.excludedMetadata.join(', ')}`);
+		}
 		
 		// Create list items for each filter
 		filters.forEach(filterText => {
@@ -570,7 +642,9 @@ export class UnifiedSummaryModal extends Modal {
 
 	private handleSubmit(): void {
 		const result: UnifiedSummaryResult = {
-			insightStyle: this.insightStyle
+			insightStyle: this.insightStyle,
+			dateSource: this.dateSource,
+			excludedMetadata: this.excludedMetadata
 		};
 
 		// Add date range if provided
@@ -578,7 +652,8 @@ export class UnifiedSummaryModal extends Modal {
 			result.dateRange = {
 				startDate: this.startDate,
 				endDate: this.endDate,
-				insightStyle: this.insightStyle
+				insightStyle: this.insightStyle,
+				dateSource: this.dateSource
 			};
 		}
 

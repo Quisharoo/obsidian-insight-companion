@@ -36,9 +36,13 @@ describe('SummaryGenerator', () => {
 		totalCount: mockNotes.length,
 		dateRange: mockDateRange,
 		mode: 'date',
+		dateSource: 'created',
+		excludedMetadata: [],
 		filterMeta: {
 			dateRange: { start: new Date('2025-01-15'), end: new Date('2025-01-20') },
-			insightStyle: 'structured'
+			insightStyle: 'structured',
+			dateSource: 'created',
+			excludedMetadata: []
 		}
 	};
 
@@ -48,9 +52,13 @@ describe('SummaryGenerator', () => {
 		folderPath: 'projects',
 		folderName: 'Projects',
 		mode: 'folder',
+		dateSource: 'created',
+		excludedMetadata: [],
 		filterMeta: {
 			folderPath: 'projects',
-			insightStyle: 'structured'
+			insightStyle: 'structured',
+			dateSource: 'created',
+			excludedMetadata: []
 		}
 		// Note: dateRange is intentionally undefined for folder mode
 	};
@@ -152,9 +160,13 @@ describe('SummaryGenerator', () => {
 			totalCount: largeNotes.length,
 			dateRange: mockDateRange,
 			mode: 'date',
+			dateSource: 'created',
+			excludedMetadata: [],
 			filterMeta: {
 				dateRange: { start: new Date('2025-01-15'), end: new Date('2025-01-20') },
-				insightStyle: 'structured'
+				insightStyle: 'structured',
+				dateSource: 'created',
+				excludedMetadata: []
 			}
 		};
 
@@ -444,9 +456,13 @@ describe('SummaryGenerator', () => {
 			totalCount: 0,
 			dateRange: mockDateRange,
 			mode: 'date',
+			dateSource: 'created',
+			excludedMetadata: [],
 			filterMeta: {
 				dateRange: { start: new Date('2025-01-15'), end: new Date('2025-01-20') },
-				insightStyle: 'structured'
+				insightStyle: 'structured',
+				dateSource: 'created',
+				excludedMetadata: []
 			}
 		};
 
@@ -462,9 +478,13 @@ describe('SummaryGenerator', () => {
 			totalCount: 1,
 			dateRange: mockDateRange,
 			mode: 'date',
+			dateSource: 'created',
+			excludedMetadata: [],
 			filterMeta: {
 				dateRange: { start: new Date('2025-01-15'), end: new Date('2025-01-20') },
-				insightStyle: 'structured'
+				insightStyle: 'structured',
+				dateSource: 'created',
+				excludedMetadata: []
 			}
 		};
 
@@ -494,9 +514,13 @@ describe('SummaryGenerator', () => {
 			totalCount: 1,
 			dateRange: mockDateRange,
 			mode: 'date',
+			dateSource: 'created',
+			excludedMetadata: [],
 			filterMeta: {
 				dateRange: { start: new Date('2025-01-15'), end: new Date('2025-01-20') },
-				insightStyle: 'structured'
+				insightStyle: 'structured',
+				dateSource: 'created',
+				excludedMetadata: []
 			}
 		};
 

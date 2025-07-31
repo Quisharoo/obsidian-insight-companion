@@ -55,7 +55,9 @@ describe('Cancellation Workflow', () => {
 				},
 				folderPath: 'test-folder',
 				folderName: 'Test Folder',
-				insightStyle: 'freeform'
+				insightStyle: 'freeform',
+				dateSource: 'created',
+				excludedMetadata: []
 			};
 
 			// Simulate cancellation from confirmation modal
@@ -81,7 +83,9 @@ describe('Cancellation Workflow', () => {
 				},
 				folderPath: 'folder1',
 				folderName: 'Folder 1',
-				insightStyle: 'structured'
+				insightStyle: 'structured',
+				dateSource: 'created',
+				excludedMetadata: []
 			};
 
 			// Simulate cancellation
@@ -96,7 +100,9 @@ describe('Cancellation Workflow', () => {
 				},
 				folderPath: 'folder2',
 				folderName: 'Folder 2',
-				insightStyle: 'freeform'
+				insightStyle: 'freeform',
+				dateSource: 'created',
+				excludedMetadata: []
 			};
 
 			// Simulate confirmation
@@ -120,7 +126,9 @@ describe('Cancellation Workflow', () => {
 				},
 				folderPath: 'test-folder',
 				folderName: 'Test Folder',
-				insightStyle: 'freeform'
+				insightStyle: 'freeform',
+				dateSource: 'created',
+				excludedMetadata: []
 			};
 
 			// When cancelled, the plugin should reopen with these exact values
@@ -146,7 +154,9 @@ describe('Cancellation Workflow', () => {
 				},
 				folderPath: 'test-folder',
 				folderName: 'Test Folder',
-				insightStyle: 'freeform'
+				insightStyle: 'freeform',
+				dateSource: 'created',
+				excludedMetadata: []
 			};
 
 			// Verify that all properties are preserved

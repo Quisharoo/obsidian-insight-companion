@@ -58,7 +58,9 @@ export default class InsightCompanionPlugin extends Plugin {
 	private openUnifiedSummaryModal(
 		defaultDateRange?: DateRange | null,
 		defaultFolderPath?: string,
-		defaultInsightStyle?: 'structured' | 'freeform'
+		defaultInsightStyle?: 'structured' | 'freeform',
+		defaultDateSource?: 'created' | 'modified',
+		defaultExcludedMetadata?: string[]
 	) {
 		console.log('Opening unified summary modal...');
 		
@@ -67,6 +69,8 @@ export default class InsightCompanionPlugin extends Plugin {
 			defaultDateRange || this.settings.lastDateRange,
 			defaultFolderPath,
 			defaultInsightStyle,
+			defaultDateSource,
+			defaultExcludedMetadata,
 			(result: UnifiedSummaryResult) => {
 				this.handleUnifiedSelection(result);
 			}
@@ -91,7 +95,8 @@ export default class InsightCompanionPlugin extends Plugin {
 				result.dateRange,
 				result.folderPath,
 				result.folderName,
-				result.insightStyle
+				result.insightStyle,
+				result.excludedMetadata
 			);
 			
 			if (filterResult.totalCount === 0) {

@@ -15,10 +15,14 @@ export interface NoteFilterResult {
 	folderPath?: string; // For folder mode
 	folderName?: string; // For folder mode
 	mode: 'date' | 'folder' | 'unified'; // Indicates filtering mode
+	dateSource: 'created' | 'modified'; // Date source for filtering
+	excludedMetadata: string[]; // Metadata patterns to exclude
 	filterMeta: {
 		folderPath?: string;
 		dateRange?: { start: Date; end: Date };
 		insightStyle: 'structured' | 'freeform';
+		dateSource: 'created' | 'modified';
+		excludedMetadata: string[];
 	};
 }
 
@@ -32,7 +36,7 @@ export class NoteFilterService {
 	/**
 	 * Retrieves all markdown notes from the vault and filters them by the given date range
 	 */
-	async filterNotesByDateRange(dateRange: DateRange): Promise<NoteFilterResult> {
+	async filterNotesByDateRange(dateRange: DateRange, excludedMetadata: string[] = []): Promise<NoteFilterResult> {
 		const startDate = new Date(dateRange.startDate);
 		const endDate = new Date(dateRange.endDate);
 		
@@ -44,15 +48,20 @@ export class NoteFilterService {
 		const filteredNotes: FilteredNote[] = [];
 
 		for (const file of allFiles) {
-			if (this.isNoteInDateRange(file, startDate, endDate)) {
+			if (this.isNoteInDateRange(file, startDate, endDate, dateRange.dateSource || 'created')) {
 				try {
 					const content = await this.app.vault.read(file);
-					filteredNotes.push({
+					const note: FilteredNote = {
 						file,
 						content,
 						createdTime: file.stat.ctime,
 						modifiedTime: file.stat.mtime
-					});
+					};
+					
+					// Apply metadata exclusion filter
+					if (!this.shouldExcludeNote(note, excludedMetadata)) {
+						filteredNotes.push(note);
+					}
 				} catch (error) {
 					console.warn(`Failed to read note: ${file.path}`, error);
 					// Continue processing other notes even if one fails
@@ -65,9 +74,13 @@ export class NoteFilterService {
 			totalCount: filteredNotes.length,
 			dateRange,
 			mode: 'date',
+			dateSource: dateRange.dateSource || 'created',
+			excludedMetadata,
 			filterMeta: {
 				dateRange: { start: startDate, end: endDate },
-				insightStyle: dateRange.insightStyle || 'structured'
+				insightStyle: dateRange.insightStyle || 'structured',
+				dateSource: dateRange.dateSource || 'created',
+				excludedMetadata
 			}
 		};
 	}
@@ -75,7 +88,7 @@ export class NoteFilterService {
 	/**
 	 * Retrieves all markdown notes from a specific folder and its subfolders
 	 */
-	async filterNotesByFolder(folderPath: string, folderName: string): Promise<NoteFilterResult> {
+	async filterNotesByFolder(folderPath: string, folderName: string, excludedMetadata: string[] = []): Promise<NoteFilterResult> {
 		const filteredNotes: FilteredNote[] = [];
 		let markdownFiles: TFile[] = [];
 
@@ -94,12 +107,17 @@ export class NoteFilterService {
 		for (const file of markdownFiles) {
 			try {
 				const content = await this.app.vault.read(file);
-				filteredNotes.push({
+				const note: FilteredNote = {
 					file,
 					content,
 					createdTime: file.stat.ctime,
 					modifiedTime: file.stat.mtime
-				});
+				};
+				
+				// Apply metadata exclusion filter
+				if (!this.shouldExcludeNote(note, excludedMetadata)) {
+					filteredNotes.push(note);
+				}
 			} catch (error) {
 				console.warn(`Failed to read note: ${file.path}`, error);
 				// Continue processing other notes even if one fails
@@ -112,9 +130,13 @@ export class NoteFilterService {
 			folderPath,
 			folderName,
 			mode: 'folder',
+			dateSource: 'created',
+			excludedMetadata,
 			filterMeta: {
 				folderPath,
-				insightStyle: 'structured' // Default for folder mode
+				insightStyle: 'structured', // Default for folder mode
+				dateSource: 'created',
+				excludedMetadata
 			}
 		};
 	}
@@ -140,17 +162,54 @@ export class NoteFilterService {
 	}
 
 	/**
-	 * Checks if a note falls within the specified date range based on creation or modification time
+	 * Checks if a note falls within the specified date range based on the selected date source
 	 */
-	private isNoteInDateRange(file: TFile, startDate: Date, endDate: Date): boolean {
-		const createdDate = new Date(file.stat.ctime);
-		const modifiedDate = new Date(file.stat.mtime);
+	private isNoteInDateRange(file: TFile, startDate: Date, endDate: Date, dateSource: 'created' | 'modified' = 'created'): boolean {
+		const noteDate = dateSource === 'created' 
+			? new Date(file.stat.ctime)
+			: new Date(file.stat.mtime);
 
-		// Note is included if either creation or modification date falls within range
-		const createdInRange = createdDate >= startDate && createdDate <= endDate;
-		const modifiedInRange = modifiedDate >= startDate && modifiedDate <= endDate;
+		return noteDate >= startDate && noteDate <= endDate;
+	}
 
-		return createdInRange || modifiedInRange;
+	/**
+	 * Checks if a note should be excluded based on metadata patterns
+	 */
+	private shouldExcludeNote(note: FilteredNote, excludedMetadata: string[]): boolean {
+		if (!excludedMetadata || excludedMetadata.length === 0) {
+			return false;
+		}
+
+		const content = note.content.toLowerCase();
+		
+		for (const pattern of excludedMetadata) {
+			const trimmedPattern = pattern.trim();
+			if (!trimmedPattern) continue;
+
+			// Check for frontmatter key-value pairs (e.g., "summarise: false")
+			if (trimmedPattern.includes(':')) {
+				const [key, value] = trimmedPattern.split(':').map(s => s.trim());
+				const frontmatterRegex = new RegExp(`^---\\s*\\n[\\s\\S]*?${key}\\s*:\\s*${value}[\\s\\S]*?\\n---`, 'im');
+				if (frontmatterRegex.test(content)) {
+					return true;
+				}
+			}
+			
+			// Check for tags (e.g., "#private")
+			if (trimmedPattern.startsWith('#')) {
+				const tagRegex = new RegExp(`\\b${trimmedPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+				if (tagRegex.test(content)) {
+					return true;
+				}
+			}
+			
+			// Check for exact text match
+			if (content.includes(trimmedPattern.toLowerCase())) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -165,7 +224,7 @@ export class NoteFilterService {
 
 		const allFiles = this.app.vault.getMarkdownFiles();
 		const filteredFiles = allFiles.filter(file => 
-			this.isNoteInDateRange(file, startDate, endDate)
+			this.isNoteInDateRange(file, startDate, endDate, dateRange.dateSource || 'created')
 		);
 
 		return {
@@ -200,7 +259,7 @@ export class NoteFilterService {
 	/**
 	 * Unified filtering method that supports date range, folder, or both filters
 	 */
-	async filterNotes(dateRange?: DateRange, folderPath?: string, folderName?: string, insightStyle: 'structured' | 'freeform' = 'structured'): Promise<NoteFilterResult> {
+	async filterNotes(dateRange?: DateRange, folderPath?: string, folderName?: string, insightStyle: 'structured' | 'freeform' = 'structured', excludedMetadata: string[] = []): Promise<NoteFilterResult> {
 		let candidateFiles: TFile[] = [];
 
 		// Step 1: Get initial file set based on folder filter
@@ -225,7 +284,7 @@ export class NoteFilterService {
 			endDate.setHours(23, 59, 59, 999);
 
 			candidateFiles = candidateFiles.filter(file => 
-				this.isNoteInDateRange(file, startDate, endDate)
+				this.isNoteInDateRange(file, startDate, endDate, dateRange.dateSource || 'created')
 			);
 		}
 
@@ -234,12 +293,17 @@ export class NoteFilterService {
 		for (const file of candidateFiles) {
 			try {
 				const content = await this.app.vault.read(file);
-				filteredNotes.push({
+				const note: FilteredNote = {
 					file,
 					content,
 					createdTime: file.stat.ctime,
 					modifiedTime: file.stat.mtime
-				});
+				};
+				
+				// Apply metadata exclusion filter
+				if (!this.shouldExcludeNote(note, excludedMetadata)) {
+					filteredNotes.push(note);
+				}
 			} catch (error) {
 				console.warn(`Failed to read note: ${file.path}`, error);
 				// Continue processing other notes even if one fails
@@ -248,7 +312,9 @@ export class NoteFilterService {
 
 		// Step 4: Build filter metadata
 		const filterMeta: NoteFilterResult['filterMeta'] = {
-			insightStyle
+			insightStyle,
+			dateSource: dateRange?.dateSource || 'created',
+			excludedMetadata
 		};
 
 		if (folderPath) {
@@ -280,6 +346,8 @@ export class NoteFilterService {
 			folderPath,
 			folderName,
 			mode,
+			dateSource: dateRange?.dateSource || 'created',
+			excludedMetadata,
 			filterMeta
 		};
 	}

@@ -25,7 +25,7 @@ describe('UnifiedSummaryModal', () => {
 			insightStyle: 'structured'
 		};
 		
-		modal = new UnifiedSummaryModal(mockApp, mockDefaultDateRange, undefined, undefined, mockOnSubmit);
+		modal = new UnifiedSummaryModal(mockApp, mockDefaultDateRange, undefined, undefined, undefined, undefined, mockOnSubmit);
 	});
 
 	describe('constructor', () => {
@@ -34,7 +34,7 @@ describe('UnifiedSummaryModal', () => {
 		});
 
 		test('should initialize with null date range', () => {
-			const modalWithNull = new UnifiedSummaryModal(mockApp, null, undefined, undefined, mockOnSubmit);
+			const modalWithNull = new UnifiedSummaryModal(mockApp, null, undefined, undefined, undefined, undefined, mockOnSubmit);
 			expect(modalWithNull).toBeDefined();
 		});
 	});
@@ -47,7 +47,7 @@ describe('UnifiedSummaryModal', () => {
 		});
 
 		test('should initialize with null date range', () => {
-			const modalWithNull = new UnifiedSummaryModal(mockApp, null, undefined, undefined, mockOnSubmit);
+			const modalWithNull = new UnifiedSummaryModal(mockApp, null, undefined, undefined, undefined, undefined, mockOnSubmit);
 			expect(modalWithNull).toBeDefined();
 		});
 
@@ -56,7 +56,9 @@ describe('UnifiedSummaryModal', () => {
 				mockApp, 
 				mockDefaultDateRange, 
 				'folder1', 
-				'freeform', 
+				'freeform',
+				undefined,
+				undefined,
 				mockOnSubmit
 			);
 			expect(modalWithDefaults['selectedFolder']).toBe('folder1');
@@ -122,9 +124,12 @@ describe('UnifiedSummaryModal', () => {
 				dateRange: {
 					startDate: '2025-01-01',
 					endDate: '2025-01-31',
-					insightStyle: 'structured'
+					insightStyle: 'structured',
+					dateSource: 'created'
 				},
-				insightStyle: 'structured'
+				insightStyle: 'structured',
+				dateSource: 'created',
+				excludedMetadata: []
 			});
 		});
 
@@ -139,7 +144,9 @@ describe('UnifiedSummaryModal', () => {
 			expect(mockOnSubmit).toHaveBeenCalledWith({
 				folderPath: 'folder1',
 				folderName: 'folder1',
-				insightStyle: 'freeform'
+				insightStyle: 'freeform',
+				dateSource: 'created',
+				excludedMetadata: []
 			});
 		});
 
@@ -155,11 +162,14 @@ describe('UnifiedSummaryModal', () => {
 				dateRange: {
 					startDate: '2025-01-01',
 					endDate: '2025-01-31',
-					insightStyle: 'structured'
+					insightStyle: 'structured',
+					dateSource: 'created'
 				},
 				folderPath: 'folder1',
 				folderName: 'folder1',
-				insightStyle: 'structured'
+				insightStyle: 'structured',
+				dateSource: 'created',
+				excludedMetadata: []
 			});
 		});
 
@@ -172,7 +182,9 @@ describe('UnifiedSummaryModal', () => {
 			modal['handleSubmit']();
 			
 			expect(mockOnSubmit).toHaveBeenCalledWith({
-				insightStyle: 'structured'
+				insightStyle: 'structured',
+				dateSource: 'created',
+				excludedMetadata: []
 			});
 		});
 	});
