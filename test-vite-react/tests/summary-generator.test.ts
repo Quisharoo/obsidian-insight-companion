@@ -35,7 +35,11 @@ describe('SummaryGenerator', () => {
 		notes: mockNotes,
 		totalCount: mockNotes.length,
 		dateRange: mockDateRange,
-		mode: 'date'
+		mode: 'date',
+		filterMeta: {
+			dateRange: { start: new Date('2025-01-15'), end: new Date('2025-01-20') },
+			insightStyle: 'structured'
+		}
 	};
 
 	const mockFolderFilterResult: NoteFilterResult = {
@@ -43,7 +47,11 @@ describe('SummaryGenerator', () => {
 		totalCount: mockNotes.length,
 		folderPath: 'projects',
 		folderName: 'Projects',
-		mode: 'folder'
+		mode: 'folder',
+		filterMeta: {
+			folderPath: 'projects',
+			insightStyle: 'structured'
+		}
 		// Note: dateRange is intentionally undefined for folder mode
 	};
 
@@ -143,7 +151,11 @@ describe('SummaryGenerator', () => {
 			notes: largeNotes,
 			totalCount: largeNotes.length,
 			dateRange: mockDateRange,
-			mode: 'date'
+			mode: 'date',
+			filterMeta: {
+				dateRange: { start: new Date('2025-01-15'), end: new Date('2025-01-20') },
+				insightStyle: 'structured'
+			}
 		};
 
 			// Mock responses for chunk summaries and final combination
@@ -431,7 +443,11 @@ describe('SummaryGenerator', () => {
 			notes: [],
 			totalCount: 0,
 			dateRange: mockDateRange,
-			mode: 'date'
+			mode: 'date',
+			filterMeta: {
+				dateRange: { start: new Date('2025-01-15'), end: new Date('2025-01-20') },
+				insightStyle: 'structured'
+			}
 		};
 
 			const result = await summaryGenerator.generateSummary(emptyFilterResult, mockProgressCallback);
@@ -445,7 +461,11 @@ describe('SummaryGenerator', () => {
 			notes: [mockNotes[0]],
 			totalCount: 1,
 			dateRange: mockDateRange,
-			mode: 'date'
+			mode: 'date',
+			filterMeta: {
+				dateRange: { start: new Date('2025-01-15'), end: new Date('2025-01-20') },
+				insightStyle: 'structured'
+			}
 		};
 
 			const result = await summaryGenerator.generateSummary(singleNoteResult, mockProgressCallback);
@@ -473,7 +493,11 @@ describe('SummaryGenerator', () => {
 			notes: [largeNote],
 			totalCount: 1,
 			dateRange: mockDateRange,
-			mode: 'date'
+			mode: 'date',
+			filterMeta: {
+				dateRange: { start: new Date('2025-01-15'), end: new Date('2025-01-20') },
+				insightStyle: 'structured'
+			}
 		};
 
 			const result = await summaryGenerator.generateSummary(largeNoteResult, mockProgressCallback);

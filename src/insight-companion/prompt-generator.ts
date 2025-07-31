@@ -27,7 +27,7 @@ export class PromptGenerator {
 	 */
 	static generateInsightPrompt(
 		notes: FilteredNote[], 
-		context: { dateRange?: DateRange; folderName?: string; folderPath?: string; mode: 'date' | 'folder' }, 
+		context: { dateRange?: DateRange; folderName?: string; folderPath?: string; mode: 'date' | 'folder' | 'unified' }, 
 		config: Partial<PromptConfig> = {}
 	): GeneratedPrompt {
 		const finalConfig = { ...this.DEFAULT_CONFIG, ...config };
@@ -154,7 +154,7 @@ Say:
 	 * Build the instruction prompt with specific guidance for analysis
 	 */
 	private static buildInstructionPrompt(
-		context: { dateRange?: DateRange; folderName?: string; folderPath?: string; mode: 'date' | 'folder' }, 
+		context: { dateRange?: DateRange; folderName?: string; folderPath?: string; mode: 'date' | 'folder' | 'unified' }, 
 		noteCount: number, 
 		config: PromptConfig
 	): string {
@@ -284,7 +284,7 @@ When referencing notes in your analysis:
 		notes: FilteredNote[], 
 		chunkIndex: number, 
 		totalChunks: number, 
-		context: { dateRange?: DateRange; folderName?: string; folderPath?: string; mode: 'date' | 'folder' }, 
+		context: { dateRange?: DateRange; folderName?: string; folderPath?: string; mode: 'date' | 'folder' | 'unified' }, 
 		config: Partial<PromptConfig> = {}
 	): GeneratedPrompt {
 		const finalConfig = { ...this.DEFAULT_CONFIG, ...config };
@@ -329,7 +329,7 @@ What's worth noticing? What stands out? Who keeps showing up? What feels unfinis
 	static combineSummariesPrompt(
 		chunkSummaries: string[], 
 		totalNoteCount: number, 
-		context: { dateRange?: DateRange; folderName?: string; folderPath?: string; mode: 'date' | 'folder' },
+		context: { dateRange?: DateRange; folderName?: string; folderPath?: string; mode: 'date' | 'folder' | 'unified' },
 		notes: FilteredNote[],
 		config: Partial<PromptConfig> = {}
 	): GeneratedPrompt {

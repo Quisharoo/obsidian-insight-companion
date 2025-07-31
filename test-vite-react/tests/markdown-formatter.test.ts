@@ -59,7 +59,7 @@ describe('MarkdownFormatter', () => {
 			expect(result).toContain('# 🧠 Insight Summary');
 
 			// Check metadata section
-			expect(result).toContain('### 📅 Date Range: `01-15-2025` to `01-20-2025`');
+								expect(result).toContain('### 📅 Date Range: `01-15-2025` → `01-20-2025`');
 			expect(result).toContain('**Notes Analyzed:** 12');
 			expect(result).toContain('**Processing Time:** 81.6s');
 			expect(result).toContain('**Model Used:** `gpt-4-0613`');
@@ -123,7 +123,7 @@ describe('MarkdownFormatter', () => {
 				dateFormat: 'iso'
 			};
 			const result = MarkdownFormatter.formatSummary(mockSummaryResult, config);
-			expect(result).toContain('`2025-01-15` to `2025-01-20`');
+								expect(result).toContain('`2025-01-15` → `2025-01-20`');
 		});
 	});
 

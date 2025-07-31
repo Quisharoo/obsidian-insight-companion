@@ -63,8 +63,21 @@ export class MarkdownFormatter {
 
 		const sections: string[] = [];
 
-		// Source info - different for date vs folder mode
-		if (mode === 'folder') {
+		// Source info - handle unified mode with both filters
+		if (mode === 'unified') {
+			// Both folder and date filters present
+			if (folderName) {
+				sections.push(`### 📁 Folder Summary: \`${folderName}\``);
+				if (folderPath && folderPath !== '') {
+					sections.push(`**Folder Path:** \`${folderPath}\``);
+				}
+			}
+			if (dateRange) {
+				const startDate = config.dateFormat === 'iso' ? dateRange.startDate : this.formatDateForDisplay(dateRange.startDate);
+				const endDate = config.dateFormat === 'iso' ? dateRange.endDate : this.formatDateForDisplay(dateRange.endDate);
+				sections.push(`### 📅 Date Range: \`${startDate}\` → \`${endDate}\``);
+			}
+		} else if (mode === 'folder') {
 			sections.push(`### 📁 Folder Summary: \`${folderName}\``);
 			if (folderPath && folderPath !== '') {
 				sections.push(`**Folder Path:** \`${folderPath}\``);
@@ -74,7 +87,7 @@ export class MarkdownFormatter {
 			if (dateRange) {
 				const startDate = config.dateFormat === 'iso' ? dateRange.startDate : this.formatDateForDisplay(dateRange.startDate);
 				const endDate = config.dateFormat === 'iso' ? dateRange.endDate : this.formatDateForDisplay(dateRange.endDate);
-				sections.push(`### 📅 Date Range: \`${startDate}\` to \`${endDate}\``);
+				sections.push(`### 📅 Date Range: \`${startDate}\` → \`${endDate}\``);
 			} else {
 				sections.push(`### 📅 Date Range: _Not specified_`);
 			}
@@ -100,9 +113,18 @@ export class MarkdownFormatter {
 		// Processing details
 		sections.push('## ⚙️ Processing');
 		sections.push(`- **Chunks Processed:** ${chunksProcessed}`);
-		sections.push(`- **Method:** ${chunksProcessed > 1 ? 
-			(mode === 'folder' ? 'Folder-based, multi-chunk' : 'Date-based, multi-chunk') : 
-			(mode === 'folder' ? 'Folder-based, single-chunk' : 'Date-based, single-chunk')}`);
+		
+		// Determine method description based on mode
+		let methodDescription: string;
+		if (mode === 'unified') {
+			methodDescription = chunksProcessed > 1 ? 'Folder + Date filter, multi-chunk' : 'Folder + Date filter, single-chunk';
+		} else if (mode === 'folder') {
+			methodDescription = chunksProcessed > 1 ? 'Folder-based, multi-chunk' : 'Folder-based, single-chunk';
+		} else {
+			methodDescription = chunksProcessed > 1 ? 'Date-based, multi-chunk' : 'Date-based, single-chunk';
+		}
+		
+		sections.push(`- **Method:** ${methodDescription}`);
 		sections.push('');
 
 		return sections.join('\n');

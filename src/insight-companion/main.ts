@@ -1,6 +1,7 @@
 import { Plugin, PluginSettingTab, App, Setting, Notice } from 'obsidian';
 import { DatePickerModal, DateRange } from './date-picker-modal';
 import { FolderPickerModal, FolderPickerModalResult } from './folder-picker-modal';
+import { UnifiedSummaryModal, UnifiedSummaryResult } from './unified-summary-modal';
 import { NoteFilterService, NoteFilterResult } from './note-filter';
 import { TokenEstimator, TokenEstimate } from './token-estimator';
 import { ConfirmationModal, ConfirmationData } from './confirmation-modal';
@@ -41,21 +42,12 @@ export default class InsightCompanionPlugin extends Plugin {
 		// Initialize OpenAI services if API key is available
 		this.initializeOpenAIServices();
 
-		// Add command to generate summary by date
+		// Add unified command to generate summary
 		this.addCommand({
-			id: 'generate-insight-summary',
-			name: 'Generate Summary',
+			id: 'summarise-notes',
+			name: 'Summarise Notes',
 			callback: () => {
-				this.openDatePicker();
-			}
-		});
-
-		// Add command to generate summary by folder
-		this.addCommand({
-			id: 'generate-insight-summary-folder',
-			name: 'Summarise by Folder',
-			callback: () => {
-				this.openFolderPicker();
+				this.openUnifiedSummaryModal();
 			}
 		});
 
@@ -63,81 +55,50 @@ export default class InsightCompanionPlugin extends Plugin {
 		this.addSettingTab(new InsightCompanionSettingTab(this.app, this));
 	}
 
-	private openDatePicker() {
-		console.log('Opening date picker modal...');
+	private openUnifiedSummaryModal() {
+		console.log('Opening unified summary modal...');
 		
-		const modal = new DatePickerModal(
+		const modal = new UnifiedSummaryModal(
 			this.app,
 			this.settings.lastDateRange,
-			(dateRange: DateRange) => {
-				this.handleDateSelection(dateRange);
+			(result: UnifiedSummaryResult) => {
+				this.handleUnifiedSelection(result);
 			}
 		);
 		
 		modal.open();
 	}
 
-	private openFolderPicker() {
-		console.log('Opening folder picker modal...');
+	private async handleUnifiedSelection(result: UnifiedSummaryResult) {
+		console.log('Unified selection:', result);
 		
-		const modal = new FolderPickerModal(
-			this.app,
-			(folderResult: FolderPickerModalResult) => {
-				this.handleFolderSelection(folderResult);
-			}
-		);
-		
-		modal.open();
-	}
-
-	private async handleDateSelection(dateRange: DateRange) {
-		console.log('Date range selected:', dateRange);
-		
-		// Cache the selected date range
-		this.settings.lastDateRange = dateRange;
-		await this.saveSettings();
-		
-		try {
-			// Filter notes by date range
-			console.log('Filtering notes by date range...');
-			const filterResult: NoteFilterResult = await this.noteFilterService.filterNotesByDateRange(dateRange);
-			
-			if (filterResult.totalCount === 0) {
-				console.log('No notes found in the selected date range');
-				new Notice('No notes found in the selected date range', 5000);
-				return;
-			}
-
-			await this.showConfirmationAndProceed(filterResult, dateRange.insightStyle);
-
-		} catch (error) {
-			console.error('Error processing date selection:', error);
-			new Notice(`Error processing date selection: ${error instanceof Error ? error.message : 'Unknown error'}`, 8000);
+		// Cache the selected date range if provided
+		if (result.dateRange) {
+			this.settings.lastDateRange = result.dateRange;
+			await this.saveSettings();
 		}
-	}
-
-	private async handleFolderSelection(folderResult: FolderPickerModalResult) {
-		console.log('Folder selected:', folderResult);
 		
 		try {
-			// Filter notes by folder
-			console.log('Filtering notes by folder...');
-			const filterResult: NoteFilterResult = await this.noteFilterService.filterNotesByFolder(
-				folderResult.folderPath,
-				folderResult.folderName
+			// Use the unified filtering method
+			console.log('Filtering notes with unified criteria...');
+			const filterResult: NoteFilterResult = await this.noteFilterService.filterNotes(
+				result.dateRange,
+				result.folderPath,
+				result.folderName,
+				result.insightStyle
 			);
 			
 			if (filterResult.totalCount === 0) {
-				console.log('No notes found in the selected folder');
-				new Notice('No notes found in the selected folder', 5000);
+				console.log('No notes found matching the selected criteria');
+				new Notice('No notes found matching the selected criteria', 5000);
 				return;
 			}
 
-			await this.showConfirmationAndProceed(filterResult, folderResult.insightStyle);
+			await this.showConfirmationAndProceed(filterResult, result.insightStyle);
 
 		} catch (error) {
-			console.error('Error processing folder selection:', error);
-			new Notice(`Error processing folder selection: ${error instanceof Error ? error.message : 'Unknown error'}`, 8000);
+			console.error('Error processing unified selection:', error);
+			new Notice(`Error processing selection: ${error instanceof Error ? error.message : 'Unknown error'}`, 8000);
 		}
 	}
 

@@ -62,28 +62,24 @@ describe('Plugin Scaffold Tests', () => {
     it('should register the "Generate Summary" command', async () => {
       await plugin.onload();
       
-      expect(plugin.addCommand).toHaveBeenCalledWith({
-        id: 'generate-insight-summary',
-        name: 'Generate Summary',
-        callback: expect.any(Function)
-      });
+      		expect(plugin.addCommand).toHaveBeenCalledWith({
+			id: 'summarise-notes',
+			name: 'Summarise Notes',
+			callback: expect.any(Function)
+		});
     });
 
-    it('should register exactly two commands', async () => {
+    it('should register exactly one command', async () => {
       await plugin.onload();
-      expect(plugin.addCommand).toHaveBeenCalledTimes(2);
+      		expect(plugin.addCommand).toHaveBeenCalledTimes(1);
     });
 
-    it('should have the correct command IDs and names', async () => {
+    it('should have the correct command ID and name', async () => {
       await plugin.onload();
       
       const firstCommandCall = (plugin.addCommand as jest.Mock).mock.calls[0][0];
-      expect(firstCommandCall.id).toBe('generate-insight-summary');
-      expect(firstCommandCall.name).toBe('Generate Summary');
-      
-      const secondCommandCall = (plugin.addCommand as jest.Mock).mock.calls[1][0];
-      expect(secondCommandCall.id).toBe('generate-insight-summary-folder');
-      expect(secondCommandCall.name).toBe('Summarise by Folder');
+      		expect(firstCommandCall.id).toBe('summarise-notes');
+		expect(firstCommandCall.name).toBe('Summarise Notes');
     });
   });
 
@@ -105,7 +101,7 @@ describe('Plugin Scaffold Tests', () => {
       
       callback();
       
-      expect(mockConsole.log).toHaveBeenCalledWith('Opening date picker modal...');
+      		expect(mockConsole.log).toHaveBeenCalledWith('Opening unified summary modal...');
     });
   });
 

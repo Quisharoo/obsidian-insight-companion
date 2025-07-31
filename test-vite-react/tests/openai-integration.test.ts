@@ -108,7 +108,11 @@ describe('OpenAI Integration - End to End', () => {
 	notes: mockNotes,
 	totalCount: mockNotes.length,
 	dateRange: mockDateRange,
-	mode: 'date'
+	mode: 'date',
+	filterMeta: {
+		dateRange: { start: new Date('2025-01-15'), end: new Date('2025-01-20') },
+		insightStyle: 'structured'
+	}
 };
 
 	beforeEach(() => {
@@ -273,7 +277,11 @@ The team has made concrete technical decisions including React for frontend deve
 			notes: largeNotes,
 			totalCount: largeNotes.length,
 			dateRange: mockDateRange,
-			mode: 'date'
+			mode: 'date',
+			filterMeta: {
+				dateRange: { start: new Date('2025-01-15'), end: new Date('2025-01-20') },
+				insightStyle: 'structured'
+			}
 		};
 
 			// Mock chunk responses
@@ -366,7 +374,7 @@ The team has made concrete technical decisions including React for frontend deve
 			const savedContent = saveCall[1];
 
 			expect(savedContent).toContain('# 🧠 Insight Summary');
-			expect(savedContent).toContain('📅 Date Range: `01-01-2024` to `01-31-2024`');
+								expect(savedContent).toContain('📅 Date Range: `01-01-2024` → `01-31-2024`');
 			expect(savedContent).toContain('**Notes Analyzed:** 2');
 			expect(savedContent).toContain('- **Input Tokens:** 2,500');
 			expect(savedContent).toContain('- **Output Tokens:** 1,200');

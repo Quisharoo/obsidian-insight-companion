@@ -26,7 +26,7 @@ export interface SummaryResult {
 		dateRange?: DateRange; // Optional for folder mode
 		folderPath?: string; // For folder mode
 		folderName?: string; // For folder mode
-		mode: 'date' | 'folder'; // Indicates summary mode
+		mode: 'date' | 'folder' | 'unified'; // Indicates summary mode
 		notesAnalyzed: number;
 		tokensUsed: {
 			prompt: number;

@@ -164,7 +164,16 @@ export class ConfirmationModal extends Modal {
 		const { filterResult } = this.confirmationData;
 		
 		let sourceText: string;
-		if (filterResult.mode === 'folder') {
+		if (filterResult.mode === 'unified') {
+			const filters: string[] = [];
+			if (filterResult.folderName) {
+				filters.push(`folder: ${filterResult.folderName}`);
+			}
+			if (filterResult.dateRange) {
+				filters.push(`date range: ${filterResult.dateRange.startDate} to ${filterResult.dateRange.endDate}`);
+			}
+			sourceText = `with filters: ${filters.join(' and ')}`;
+		} else if (filterResult.mode === 'folder') {
 			sourceText = `in folder: ${filterResult.folderName}${filterResult.folderPath ? ` (${filterResult.folderPath})` : ''}`;
 		} else if (filterResult.mode === 'date' && filterResult.dateRange) {
 			const dateRangeText = `${filterResult.dateRange.startDate} to ${filterResult.dateRange.endDate}`;
