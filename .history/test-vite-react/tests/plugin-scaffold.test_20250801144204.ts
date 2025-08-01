@@ -138,8 +138,7 @@ describe('Plugin Scaffold Tests', () => {
       expect(plugin.settings).toEqual({
         lastDateRange: null,
         outputFolder: 'Summaries',
-        openaiApiKey: '',
-        lastExcludedMetadata: ['summarise: false']
+        openaiApiKey: ''
       });
     });
 
