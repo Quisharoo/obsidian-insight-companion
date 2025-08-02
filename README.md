@@ -2,6 +2,8 @@
 
 Automatically generate insightful summaries from collections of your vault notes using OpenAI's language models.
 
+<!-- Simple verification change for testing PR workflow -->
+
 ## Features
 
 - **Interactive Date Picker**: Select custom date ranges with preset options (Last 7/30/90 days, This month)
@@ -81,4 +83,4 @@ src/insight-companion/
 ├── main.ts                 # Plugin entry point
 ├── date-picker-modal.ts    # Date picker UI component
 └── manifest.json           # Plugin metadata
-``` 
+```  
