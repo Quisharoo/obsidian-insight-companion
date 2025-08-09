@@ -25,7 +25,7 @@ describe('UnifiedSummaryModal', () => {
 			insightStyle: 'structured'
 		};
 		
-		modal = new UnifiedSummaryModal(mockApp, mockDefaultDateRange, undefined, undefined, undefined, undefined, mockOnSubmit);
+    modal = new UnifiedSummaryModal(mockApp, mockDefaultDateRange, undefined, undefined, undefined, undefined, mockOnSubmit);
 	});
 
 	describe('constructor', () => {
@@ -137,9 +137,9 @@ describe('UnifiedSummaryModal', () => {
 		});
 	});
 
-	describe('handleSubmit', () => {
+  describe('handleSubmit', () => {
 
-		test('should submit with date range only', () => {
+        test('should submit with date range only', () => {
 			modal['startDate'] = '2025-01-01';
 			modal['endDate'] = '2025-01-31';
 			modal['selectedFolder'] = '';
@@ -147,7 +147,7 @@ describe('UnifiedSummaryModal', () => {
 			
 			modal['handleSubmit']();
 			
-			expect(mockOnSubmit).toHaveBeenCalledWith({
+            expect(mockOnSubmit).toHaveBeenCalledWith({
 				dateRange: {
 					startDate: '2025-01-01',
 					endDate: '2025-01-31',
@@ -157,8 +157,8 @@ describe('UnifiedSummaryModal', () => {
 				insightStyle: 'structured',
 				dateSource: 'created',
 				excludedMetadata: ['summarise: false']
-			});
-		});
+            });
+        });
 
 		test('should submit with folder only', () => {
 			modal['startDate'] = '';
@@ -375,6 +375,29 @@ describe('UnifiedSummaryModal', () => {
 			);
 			expect(modalWithDefaults['excludedMetadata']).toEqual(['summarise: false']);
 		});
+
+  describe('reset to defaults', () => {
+    test('should reset filters to defaults when Reset to defaults clicked', () => {
+      const m = new UnifiedSummaryModal(mockApp, mockDefaultDateRange, 'folder1', 'freeform', 'modified', ['#private'], mockOnSubmit);
+      m['onOpen']?.call(m);
+      m['clearAllFilters']?.call(m);
+      expect(m['startDate']).toBe('');
+      expect(m['endDate']).toBe('');
+      expect(m['selectedFolder']).toBe('');
+      expect(m['insightStyle']).toBe('structured');
+      expect(m['dateSource']).toBe('created');
+      expect(m['excludedMetadata']).toEqual(['summarise: false']);
+    });
+  });
+
+  describe('api key inline error', () => {
+    test('should allow calling showApiKeyMissingError without throwing', () => {
+      const m = new UnifiedSummaryModal(mockApp, mockDefaultDateRange, undefined, undefined, undefined, undefined, mockOnSubmit, true);
+      // prepare errorEl
+      (m as any).errorEl = { textContent: '', style: { display: 'none' }, createEl: jest.fn().mockReturnValue({}) } as any;
+      expect(() => (m as any).showApiKeyMissingError()).not.toThrow();
+    });
+  });
 
 		test('should preserve user custom excluded metadata', () => {
 			const customExcludedMetadata = ['#private', 'status: draft'];

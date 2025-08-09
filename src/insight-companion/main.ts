@@ -14,13 +14,15 @@ interface InsightCompanionSettings {
 	outputFolder: string;
 	openaiApiKey: string;
 	lastExcludedMetadata: string[];
+	hasCompletedOnboarding?: boolean;
 }
 
 const DEFAULT_SETTINGS: InsightCompanionSettings = {
 	lastDateRange: null,
 	outputFolder: 'Summaries',
 	openaiApiKey: '',
-	lastExcludedMetadata: ['summarise: false']
+	lastExcludedMetadata: ['summarise: false'],
+	hasCompletedOnboarding: false
 };
 
 export default class InsightCompanionPlugin extends Plugin {
@@ -49,12 +51,27 @@ export default class InsightCompanionPlugin extends Plugin {
 			id: 'summarise-notes',
 			name: 'Summarise Notes',
 			callback: () => {
-				this.openUnifiedSummaryModal();
+				const apiKeyMissing = !this.settings.openaiApiKey || this.settings.openaiApiKey.trim() === '';
+				this.openUnifiedSummaryModal(
+					undefined,
+					undefined,
+					undefined,
+					undefined,
+					undefined,
+					apiKeyMissing
+				);
 			}
 		});
 
 		// Add settings tab
 		this.addSettingTab(new InsightCompanionSettingTab(this.app, this));
+
+		// First-run onboarding toast
+		if (!this.settings.hasCompletedOnboarding) {
+			new Notice('Insight Companion: Setup required. Open Settings → Insight Companion to add your OpenAI key.', 8000);
+			this.settings.hasCompletedOnboarding = true;
+			await this.saveSettings();
+		}
 	}
 
 	private openUnifiedSummaryModal(
@@ -62,7 +79,9 @@ export default class InsightCompanionPlugin extends Plugin {
 		defaultFolderPath?: string,
 		defaultInsightStyle?: 'structured' | 'freeform' | 'succinct',
 		defaultDateSource?: 'created' | 'modified',
-		defaultExcludedMetadata?: string[]
+		defaultExcludedMetadata?: string[],
+		showApiKeyError?: boolean,
+		onOpenSettings?: () => void
 	) {
 		console.log('Opening unified summary modal...');
 		
@@ -75,7 +94,9 @@ export default class InsightCompanionPlugin extends Plugin {
 			defaultExcludedMetadata || this.settings.lastExcludedMetadata,
 			(result: UnifiedSummaryResult) => {
 				this.handleUnifiedSelection(result);
-			}
+			},
+			showApiKeyError,
+			onOpenSettings
 		);
 		
 		modal.open();
@@ -138,6 +159,7 @@ export default class InsightCompanionPlugin extends Plugin {
 			limitCheck
 		};
 
+		const consentNeeded = filterResult.totalCount > 0;
 		const confirmationModal = new ConfirmationModal(
 			this.app,
 			confirmationData,
@@ -157,7 +179,8 @@ export default class InsightCompanionPlugin extends Plugin {
 						originalSelection.excludedMetadata
 					);
 				}
-			}
+			},
+			consentNeeded
 		);
 
 		confirmationModal.open();
@@ -346,6 +369,8 @@ class InsightCompanionSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		containerEl.createEl('h2', { text: 'Insight Companion Settings' });
+		containerEl.createEl('div', { text: 'Generate thematic insights across your notes with cost and token awareness. Requires an OpenAI API key.' });
+		containerEl.createEl('div', { text: 'Docs: /Insights/_Docs/Getting Started.md' });
 
 		new Setting(containerEl)
 			.setName('OpenAI API Key')
@@ -381,3 +406,14 @@ class InsightCompanionSettingTab extends PluginSettingTab {
 		}
 	}
 } 
+
+// Lightweight helper to trigger settings UI in-app (no-op in tests)
+(InsightCompanionPlugin.prototype as any).openSettingsTab = function() {
+    try {
+        const tab = new InsightCompanionSettingTab(this.app, this);
+        this.addSettingTab(tab);
+        tab.display();
+    } catch (e) {
+        console.warn('Open settings not supported in this environment');
+    }
+};

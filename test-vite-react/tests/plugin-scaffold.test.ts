@@ -135,12 +135,10 @@ describe('Plugin Scaffold Tests', () => {
       
       await plugin.loadSettings();
       
-      expect(plugin.settings).toEqual({
-        lastDateRange: null,
-        outputFolder: 'Summaries',
-        openaiApiKey: '',
-        lastExcludedMetadata: ['summarise: false']
-      });
+      expect(plugin.settings.lastDateRange).toBeNull();
+      expect(plugin.settings.outputFolder).toBe('Summaries');
+      expect(plugin.settings.openaiApiKey).toBe('');
+      expect(plugin.settings.lastExcludedMetadata).toEqual(['summarise: false']);
     });
 
     it('should load settings from data', async () => {

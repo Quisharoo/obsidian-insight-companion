@@ -111,12 +111,12 @@ export class OpenAIService {
 			temperature: this.config.temperature
 		};
 
-		try {
-			const response = await this.makeRequest('/chat/completions', requestBody);
-			return this.parseResponse(response);
-		} catch (error) {
-			throw this.handleError(error);
-		}
+        try {
+            const response = await this.makeRequest('/chat/completions', requestBody);
+            return this.parseResponse(response);
+        } catch (error) {
+            throw this.handleError(error);
+        }
 	}
 
 	/**

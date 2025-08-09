@@ -21,15 +21,18 @@ export class ConfirmationModal extends Modal {
 	private confirmationData: ConfirmationData;
 	private onResult: (result: ConfirmationResult) => void;
 	private confirmButton: HTMLButtonElement;
+    private consentNeeded: boolean = false;
 
-	constructor(
+    constructor(
 		app: App, 
 		confirmationData: ConfirmationData,
-		onResult: (result: ConfirmationResult) => void
+        onResult: (result: ConfirmationResult) => void,
+        consentNeeded?: boolean
 	) {
 		super(app);
 		this.confirmationData = confirmationData;
 		this.onResult = onResult;
+        this.consentNeeded = !!consentNeeded;
 	}
 
 	onOpen() {
@@ -53,6 +56,11 @@ export class ConfirmationModal extends Modal {
 
 		// Warnings section (if needed)
 		this.createWarningsSection(contentEl);
+
+        // Consent section (if needed)
+        if (this.consentNeeded) {
+            this.createConsentSection(contentEl);
+        }
 
 		// Action buttons
 		this.createActionButtons(contentEl);
@@ -264,6 +272,18 @@ export class ConfirmationModal extends Modal {
 			cls: 'cost-disclaimer'
 		});
 	}
+
+    private createConsentSection(containerEl: HTMLElement) {
+        const consentSection = containerEl.createEl('div', { cls: 'confirmation-section' });
+        consentSection.createEl('h3', { text: 'Consent' });
+
+        const { filterResult } = this.confirmationData;
+        const noteCount = filterResult.totalCount;
+        const consentText = noteCount > 0
+            ? `You’re about to send excerpts of ${noteCount} note${noteCount !== 1 ? 's' : ''} to the LLM.`
+            : `You’re about to send excerpts of your selected notes to the LLM.`;
+        consentSection.createEl('p', { text: consentText });
+    }
 
 	private createWarningsSection(containerEl: HTMLElement) {
 		const { limitCheck } = this.confirmationData;

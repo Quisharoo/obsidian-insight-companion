@@ -54,8 +54,8 @@ describe('ConfirmationModal', () => {
 				recommendations: []
 			}
 		};
-		
-		modal = new ConfirmationModal(mockApp, mockConfirmationData, mockOnResult);
+        
+        modal = new ConfirmationModal(mockApp, mockConfirmationData, mockOnResult, true);
 	});
 
 	describe('constructor', () => {
@@ -86,6 +86,12 @@ describe('ConfirmationModal', () => {
 			expect(ConfirmationModal.shouldAllowGeneration(128000)).toBe(true);
 			expect(ConfirmationModal.shouldAllowGeneration(128001)).toBe(false);
 		});
+
+  describe('consent banner', () => {
+    test('should indicate consent needed when enabled', () => {
+      expect((modal as any)['consentNeeded']).toBe(true);
+    });
+  });
 
 		test('should return correct warning levels', () => {
 			expect(ConfirmationModal.getWarningLevel(1000)).toBe('none');

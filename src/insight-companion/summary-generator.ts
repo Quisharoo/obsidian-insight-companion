@@ -18,6 +18,7 @@ export interface SummaryProgress {
 	totalChunks: number;
 	message: string;
 	error?: OpenAIError;
+    failedChunkIndex?: number;
 }
 
 export interface SummaryResult {
@@ -87,7 +88,7 @@ export class SummaryGenerator {
 			let totalTokensUsed = { prompt: 0, completion: 0, total: 0 };
 			let model = '';
 
-			if (totalChunks === 1) {
+            if (totalChunks === 1) {
 				// Single chunk - direct generation
 				const result = await this.generateSingleSummary(chunks[0], filterResult, progressCallback);
 				finalSummary = result.content;
@@ -106,18 +107,31 @@ export class SummaryGenerator {
 						message: `Generating insights for chunk ${i + 1} of ${totalChunks}...`
 					});
 
-					const chunkResult = await this.generateChunkSummary(
-						chunks[i], 
-						i, 
-						totalChunks, 
-						filterResult
-					);
+                    try {
+                        const chunkResult = await this.generateChunkSummary(
+                            chunks[i], 
+                            i, 
+                            totalChunks, 
+                            filterResult
+                        );
 
-					chunkSummaries.push(chunkResult.content);
-					totalTokensUsed.prompt += chunkResult.tokensUsed.prompt;
-					totalTokensUsed.completion += chunkResult.tokensUsed.completion;
-					totalTokensUsed.total += chunkResult.tokensUsed.total;
-					model = chunkResult.model;
+                        chunkSummaries.push(chunkResult.content);
+                        totalTokensUsed.prompt += chunkResult.tokensUsed.prompt;
+                        totalTokensUsed.completion += chunkResult.tokensUsed.completion;
+                        totalTokensUsed.total += chunkResult.tokensUsed.total;
+                        model = chunkResult.model;
+                    } catch (error) {
+                        const openaiError = error as OpenAIError;
+                        progressCallback?.({
+                            stage: 'error',
+                            currentChunk: i + 1,
+                            totalChunks,
+                            message: `Failed on chunk ${i + 1}/${totalChunks}: ${openaiError.message}`,
+                            error: openaiError,
+                            failedChunkIndex: i
+                        });
+                        throw error;
+                    }
 				}
 
 				// Combine chunk summaries
@@ -167,7 +181,7 @@ export class SummaryGenerator {
 				}
 			};
 
-		} catch (error) {
+        } catch (error) {
 			const openaiError = error as OpenAIError;
 			progressCallback?.({
 				stage: 'error',

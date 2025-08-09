@@ -101,6 +101,17 @@ export class Setting {
     callback(mockDropdown);
     return this;
   }
+
+  addTextArea(callback: (textarea: any) => void) {
+    const mockTextArea = {
+      inputEl: new MockHTMLInputElement(),
+      setPlaceholder: jest.fn().mockReturnThis(),
+      setValue: jest.fn().mockReturnThis(),
+      onChange: jest.fn().mockReturnThis(),
+    };
+    callback(mockTextArea);
+    return this;
+  }
 }
 
 // Mock HTML elements for testing
@@ -165,3 +176,15 @@ export const mockObsidianApi = {
   PluginSettingTab,
   Setting,
 }; 
+
+// Provide a simple Notice mock compatible with constructor usage in code
+export class Notice {
+  message: string;
+  duration: number;
+  constructor(message: string, duration?: number) {
+    this.message = message;
+    this.duration = duration || 0;
+  }
+  setMessage(_msg: string) {}
+  hide() {}
+}
