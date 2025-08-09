@@ -142,6 +142,11 @@ export class OpenAIService {
 			const error = new Error(`HTTP ${response.status}: ${errorMessage}`);
 			(error as any).status = response.status;
 			(error as any).responseData = responseData;
+			// Respect Retry-After header if present for rate limits
+			const retryAfterHeader = response.headers?.get?.('retry-after');
+			if (retryAfterHeader) {
+				(error as any).retryAfter = parseInt(retryAfterHeader, 10);
+			}
 			throw error;
 		}
 
@@ -178,6 +183,7 @@ export class OpenAIService {
 	private handleError(error: any): OpenAIError {
 		const message = error.message || 'Unknown error occurred';
 		const status = error.status;
+        const retryAfterFromHeader: number | undefined = (error as any).retryAfter;
 
 		// Check HTTP status codes first for more reliable categorization
 		if (status === 401 || message.includes('authentication') || message.includes('Invalid authentication')) {
@@ -185,7 +191,7 @@ export class OpenAIService {
 		}
 
 		if (status === 429 || message.includes('rate limit')) {
-			const retryAfter = this.extractRetryAfter(message);
+			const retryAfter = retryAfterFromHeader ?? this.extractRetryAfter(message);
 			return this.createError('rate_limit', 'OpenAI API rate limit exceeded', true, retryAfter);
 		}
 

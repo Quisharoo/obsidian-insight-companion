@@ -14,6 +14,7 @@ interface InsightCompanionSettings {
 	outputFolder: string;
 	openaiApiKey: string;
 	lastExcludedMetadata: string[];
+	maxNotesPerRun?: number;
 	trends?: {
 		include: boolean;
 		maxTerms: number;
@@ -29,6 +30,7 @@ const DEFAULT_SETTINGS: InsightCompanionSettings = {
 	outputFolder: 'Summaries',
 	openaiApiKey: '',
 	lastExcludedMetadata: ['summarise: false'],
+	maxNotesPerRun: 300,
 	trends: { include: false, maxTerms: 10, minMentions: 2, entityHeuristics: true, deltaEnabled: true },
 	hasCompletedOnboarding: false
 };
@@ -77,6 +79,30 @@ export default class InsightCompanionPlugin extends Plugin {
 		// First-run onboarding toast
 		if (!this.settings.hasCompletedOnboarding) {
 			new Notice('Insight Companion: Setup required. Open Settings → Insight Companion to add your OpenAI key.', 8000);
+
+			// Best-effort: create Getting Started doc on first run (guarded for tests)
+			try {
+				const vault: any = (this.app as any).vault;
+				if (vault && typeof vault.getAbstractFileByPath === 'function') {
+					const docPath = 'Insights/_Docs/Getting Started.md';
+					const existing = vault.getAbstractFileByPath(docPath);
+					if (!existing) {
+						// Ensure parent folder(s)
+						const insightsFolder = 'Insights';
+						const docsFolder = 'Insights/_Docs';
+						if (!vault.getAbstractFileByPath(insightsFolder)) {
+							await vault.createFolder(insightsFolder);
+						}
+						if (!vault.getAbstractFileByPath(docsFolder)) {
+							await vault.createFolder(docsFolder);
+						}
+						await vault.create(docPath, '# Getting Started\n\n1. Open Settings → Insight Companion and add your OpenAI API key.\n2. Open the command palette and run “Summarise Notes”.\n3. Pick a date range or folder (or both).\n4. Review the confirmation (note count, token/cost estimate, exclusions).\n5. Confirm to generate; the summary appears in the Summaries folder.\n\nPrivacy & Data\n- Only excerpts are sent to the model.\n- Use filters and exclusions (front‑matter, tags) to limit scope.');
+					}
+				}
+			} catch (_) {
+				// ignore in tests/air-gapped envs
+			}
+
 			this.settings.hasCompletedOnboarding = true;
 			await this.saveSettings();
 		}
@@ -148,9 +174,19 @@ export default class InsightCompanionPlugin extends Plugin {
 	}
 
 	private async showConfirmationAndProceed(filterResult: NoteFilterResult, originalSelection: UnifiedSummaryResult) {
-		// Estimate token count
+		// Enforce batch cap if configured
+		const maxNotes = this.settings.maxNotesPerRun ?? (DEFAULT_SETTINGS as any).maxNotesPerRun;
+		let notesForRun = filterResult.notes;
+		let capInfo: { cappedTo: number; total: number } | undefined;
+		if (typeof maxNotes === 'number' && maxNotes > 0 && filterResult.totalCount > maxNotes) {
+			notesForRun = filterResult.notes.slice(0, maxNotes);
+			capInfo = { cappedTo: notesForRun.length, total: filterResult.totalCount };
+			new Notice(`Processing first ${notesForRun.length} of ${filterResult.totalCount} notes. Refine filters or increase the cap in Settings → Advanced.`, 8000);
+		}
+
+		// Estimate token count for the actual batch to run
 		console.log('Estimating token count...');
-		const tokenEstimate: TokenEstimate = TokenEstimator.estimateTokens(filterResult.notes);
+		const tokenEstimate: TokenEstimate = TokenEstimator.estimateTokens(notesForRun);
 		
 		// Check token limits and provide recommendations
 		const limitCheck = TokenEstimator.checkTokenLimits(tokenEstimate.totalTokens);
@@ -159,15 +195,23 @@ export default class InsightCompanionPlugin extends Plugin {
 		const currentModel = this.openaiService?.getCurrentModel();
 		const costEstimate = TokenEstimator.estimateCost(tokenEstimate.totalTokens, currentModel);
 
-		// Show confirmation dialog with note count and token estimate
-		const confirmationData: ConfirmationData = {
-			filterResult,
-			tokenEstimate,
-			costEstimate,
-			limitCheck
+		// Build effective filter result used for confirmation and run (apply cap if present)
+		const effectiveFilterResult: NoteFilterResult = {
+			...filterResult,
+			notes: notesForRun,
+			totalCount: notesForRun.length
 		};
 
-		const consentNeeded = filterResult.totalCount > 0;
+		// Show confirmation dialog with note count and token estimate
+		const confirmationData: ConfirmationData = {
+			filterResult: effectiveFilterResult,
+			tokenEstimate,
+			costEstimate,
+			limitCheck,
+			capInfo
+		};
+
+		const consentNeeded = (capInfo?.cappedTo ?? effectiveFilterResult.totalCount) > 0;
 		const confirmationModal = new ConfirmationModal(
 			this.app,
 			confirmationData,
@@ -175,7 +219,7 @@ export default class InsightCompanionPlugin extends Plugin {
 				if (result.confirmed) {
 					// User confirmed - proceed with summary generation
 					console.log('User confirmed summary generation');
-					this.proceedWithSummaryGeneration(filterResult, tokenEstimate, originalSelection.insightStyle);
+					this.proceedWithSummaryGeneration(effectiveFilterResult, tokenEstimate, originalSelection.insightStyle);
 				} else {
 					// User cancelled - return to filter modal with previous values
 					console.log('User cancelled summary generation, returning to filter modal');
@@ -408,6 +452,21 @@ class InsightCompanionSettingTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.outputFolder)
 				.onChange(async (value) => {
 					this.plugin.settings.outputFolder = value;
+					await this.plugin.saveSettings();
+				}));
+
+		// Advanced options
+		containerEl.createEl('h3', { text: 'Advanced' });
+		containerEl.createEl('div', { text: 'These settings help with performance on large vaults.' });
+		new Setting(containerEl)
+			.setName('Max Notes Per Run')
+			.setDesc('Caps how many notes are processed per run (helps performance).')
+			.addText(text => text
+				.setPlaceholder(String((DEFAULT_SETTINGS as any).maxNotesPerRun))
+				.setValue(String(this.plugin.settings.maxNotesPerRun ?? (DEFAULT_SETTINGS as any).maxNotesPerRun))
+				.onChange(async (value) => {
+					const parsed = parseInt(value, 10);
+					this.plugin.settings.maxNotesPerRun = isNaN(parsed) || parsed <= 0 ? (DEFAULT_SETTINGS as any).maxNotesPerRun : parsed;
 					await this.plugin.saveSettings();
 				}));
 

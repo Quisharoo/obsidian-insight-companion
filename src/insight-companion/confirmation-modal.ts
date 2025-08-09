@@ -11,6 +11,7 @@ export interface ConfirmationData {
 		withinGPT4TurboLimit: boolean; 
 		recommendations: string[] 
 	};
+    capInfo?: { cappedTo: number; total: number };
 }
 
 export interface ConfirmationResult {
@@ -170,7 +171,7 @@ export class ConfirmationModal extends Modal {
 		const notesSection = containerEl.createEl('div', { cls: 'confirmation-section' });
 		notesSection.createEl('h3', { text: 'Notes Selected' });
 
-		const { filterResult } = this.confirmationData;
+        const { filterResult, capInfo } = this.confirmationData;
 		
 		let sourceText: string;
 		if (filterResult.mode === 'unified') {
@@ -191,9 +192,16 @@ export class ConfirmationModal extends Modal {
 			sourceText = `in the selected collection`;
 		}
 
-		notesSection.createEl('p', { 
-			text: `Found ${filterResult.totalCount} note${filterResult.totalCount !== 1 ? 's' : ''} ${sourceText}` 
-		});
+        if (capInfo) {
+            notesSection.createEl('p', { 
+                text: `Found ${capInfo.total} notes ${sourceText}. This run will process the first ${capInfo.cappedTo}.`,
+                cls: 'info-text'
+            });
+        } else {
+            notesSection.createEl('p', { 
+                text: `Found ${filterResult.totalCount} note${filterResult.totalCount !== 1 ? 's' : ''} ${sourceText}` 
+            });
+        }
 
 		// Show a few example note names if available
 		if (filterResult.notes.length > 0) {
@@ -212,6 +220,12 @@ export class ConfirmationModal extends Modal {
 				});
 			}
 		}
+
+        // Exclusions summary
+        if (filterResult.excludedMetadata && filterResult.excludedMetadata.length > 0) {
+            const exclusions = filterResult.excludedMetadata.join(', ');
+            notesSection.createEl('p', { text: `Exclusions applied: ${exclusions}`, cls: 'info-text' });
+        }
 	}
 
 	private createTokenSection(containerEl: HTMLElement) {

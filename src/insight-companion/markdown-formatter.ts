@@ -172,12 +172,12 @@ export class MarkdownFormatter {
 
 	private static buildYamlFrontMatter(metadata: SummaryResult['metadata']): string {
 		try {
-			const icRun: any = {
+            const icRun: any = {
 				date: new Date().toISOString(),
 				model: metadata.model,
 				style: metadata.mode === 'unified' ? metadata?.dateRange?.insightStyle || 'structured' : 'structured',
 				noteCount: metadata.notesAnalyzed,
-				tokenEstimate: metadata.tokensUsed.total
+                tokenEstimate: metadata.tokensUsed.total
 			};
 
 			if (metadata.dateRange) {
@@ -193,11 +193,16 @@ export class MarkdownFormatter {
 				};
 			}
 
-			// Serialize top trends (first 10) in front-matter for future delta computations
+            // Serialize top trends (first 10) in front-matter for future delta computations
 			if ((metadata as any).trends && Array.isArray((metadata as any).trends)) {
 				const trends = ((metadata as any).trends as Array<any>).slice(0, 10);
 				icRun.trends = trends.map(t => ({ term: t.term, mentions: t.mentions }));
 			}
+
+            // Include date source and exclusions for reproducibility
+            if ((metadata as any).dateRange && (metadata as any).dateRange.dateSource) {
+                (icRun as any).dateSource = (metadata as any).dateRange.dateSource;
+            }
 
 			const lines: string[] = ['ic-run:'];
 			Object.entries(icRun).forEach(([key, value]) => {

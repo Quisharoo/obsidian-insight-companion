@@ -82,3 +82,32 @@ src/insight-companion/
 ├── date-picker-modal.ts    # Date picker UI component
 └── manifest.json           # Plugin metadata
 ``` 
+
+## First Run and Usage
+
+- On first load, you’ll see a toast prompting you to configure your API key.
+- A quickstart doc is created at `Insights/_Docs/Getting Started.md` (if missing).
+- Open Settings → Insight Companion, paste your OpenAI API key, and set your output folder.
+
+### Running a Summary
+1. Run the command “Summarise Notes”.
+2. Choose a date range and/or folder, output style, and exclusions.
+3. Confirm the token/cost estimate and consent.
+4. The summary is saved to your configured folder and a success toast links to it.
+
+## Privacy & Data
+
+- Only excerpts (capped preview length) are sent to the model; full notes are never sent unless you explicitly increase preview limits in advanced settings.
+- Use filters and exclusions (front‑matter patterns, tags like `#private`) to constrain scope.
+- Network failures, auth issues, and rate limits are handled gracefully with actionable notices.
+
+## Known Limits
+
+- Very large vaults are capped per run; adjust “Max Notes Per Run” in settings.
+- API token and model quotas apply; rate limit backoff is automatic.
+
+## Troubleshooting
+
+- Missing API key: Open Settings → Insight Companion.
+- Network blocked: You’ll see a non‑blocking error toast; try again when online.
+- No matching notes: The run short‑circuits with an informational notice.

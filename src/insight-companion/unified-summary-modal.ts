@@ -559,6 +559,21 @@ export class UnifiedSummaryModal extends Modal {
 				this.handleSubmit();
 			}
 		});
+
+		// Keyboard shortcuts: Enter = confirm, Esc = cancel
+		const keyHandler = (evt: KeyboardEvent) => {
+			if (evt.key === 'Escape') {
+				this.close();
+			} else if (evt.key === 'Enter') {
+				evt.preventDefault();
+				if (this.validateInputs()) {
+					this.handleSubmit();
+				}
+			}
+		};
+		this.contentEl.addEventListener('keydown', keyHandler as any);
+		(this.contentEl as any).tabIndex = -1;
+		(this.contentEl as any).focus?.();
 	}
 
 	private clearAllFilters() {

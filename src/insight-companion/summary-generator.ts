@@ -129,8 +129,9 @@ export class SummaryGenerator {
 				totalTokensUsed = result.tokensUsed;
 				model = result.model;
 			} else {
-				// Multiple chunks - generate partial summaries then combine
-				const chunkSummaries: string[] = [];
+                // Multiple chunks - generate partial summaries then combine
+                const chunkSummaries: string[] = [];
+                const failedChunks: number[] = [];
 
 				// Generate summaries for each chunk
 				for (let i = 0; i < chunks.length; i++) {
@@ -156,6 +157,8 @@ export class SummaryGenerator {
                         model = chunkResult.model;
                     } catch (error) {
                         const openaiError = error as OpenAIError;
+                        failedChunks.push(i);
+                        // Report error but continue with remaining chunks
                         progressCallback?.({
                             stage: 'error',
                             currentChunk: i + 1,
@@ -164,7 +167,9 @@ export class SummaryGenerator {
                             error: openaiError,
                             failedChunkIndex: i
                         });
-                        throw error;
+                        // Insert a placeholder to maintain ordering for combination
+                        chunkSummaries.push(`(Chunk ${i + 1} failed: ${openaiError.message})`);
+                        // Continue loop without throwing
                     }
 				}
 
@@ -176,7 +181,7 @@ export class SummaryGenerator {
 					message: 'Combining chunk summaries into final insight...'
 				});
 
-				const combinedResult = await this.combineSummaries(
+                const combinedResult = await this.combineSummaries(
 					chunkSummaries, 
 					notes.length, 
 					filterResult,
@@ -198,7 +203,7 @@ export class SummaryGenerator {
 
 			const generationTime = Date.now() - startTime;
 
-			const result: SummaryResult = {
+            const result: SummaryResult = {
 				content: finalSummary,
 				metadata: {
 					...(filterResult.mode === 'date' ? { dateRange: filterResult.dateRange } : {}),
@@ -211,7 +216,7 @@ export class SummaryGenerator {
 					tokensUsed: totalTokensUsed,
 					chunksProcessed: totalChunks,
 					generationTime,
-					model
+                    model
 				}
 			};
 			if (computedTrends && computedTrends.length > 0) {
