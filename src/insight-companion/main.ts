@@ -50,7 +50,8 @@ export default class InsightCompanionPlugin extends Plugin {
 		// Initialize core services
 		this.noteFilterService = new NoteFilterService(this.app);
 		this.fileService = new FileService(this.app, {
-			outputFolder: this.settings.outputFolder
+			outputFolder: this.settings.outputFolder,
+			formattingConfig: { pluginVersion: (this as any).manifest?.version }
 		});
 
 		// Initialize OpenAI services if API key is available
@@ -130,7 +131,8 @@ export default class InsightCompanionPlugin extends Plugin {
 				this.handleUnifiedSelection(result);
 			},
 			showApiKeyError,
-			onOpenSettings
+			onOpenSettings,
+			!!this.settings.trends?.include
 		);
 		
 		modal.open();
@@ -219,7 +221,12 @@ export default class InsightCompanionPlugin extends Plugin {
 				if (result.confirmed) {
 					// User confirmed - proceed with summary generation
 					console.log('User confirmed summary generation');
-					this.proceedWithSummaryGeneration(effectiveFilterResult, tokenEstimate, originalSelection.insightStyle);
+					this.proceedWithSummaryGeneration(
+						effectiveFilterResult,
+						tokenEstimate,
+						originalSelection.insightStyle,
+						originalSelection.includeTrends
+					);
 				} else {
 					// User cancelled - return to filter modal with previous values
 					console.log('User cancelled summary generation, returning to filter modal');
@@ -238,7 +245,12 @@ export default class InsightCompanionPlugin extends Plugin {
 		confirmationModal.open();
 	}
 
-	private async proceedWithSummaryGeneration(filterResult: NoteFilterResult, tokenEstimate: TokenEstimate, insightStyle?: 'structured' | 'freeform' | 'succinct') {
+	private async proceedWithSummaryGeneration(
+		filterResult: NoteFilterResult,
+		tokenEstimate: TokenEstimate,
+		insightStyle?: 'structured' | 'freeform' | 'succinct',
+		includeTrendsOverride?: boolean
+	) {
 		console.log('Proceeding with summary generation...');
 		console.log(`Processing ${filterResult.totalCount} notes with ${tokenEstimate.totalTokens} estimated tokens`);
 		
@@ -252,7 +264,7 @@ export default class InsightCompanionPlugin extends Plugin {
 		const summaryConfig = {
 			promptConfig: { insightStyle },
 			trendOptions: {
-				include: !!this.settings.trends?.include,
+				include: typeof includeTrendsOverride === 'boolean' ? includeTrendsOverride : !!this.settings.trends?.include,
 				maxTerms: this.settings.trends?.maxTerms ?? 10,
 				minMentions: this.settings.trends?.minMentions ?? 2,
 				entityHeuristics: this.settings.trends?.entityHeuristics ?? true,

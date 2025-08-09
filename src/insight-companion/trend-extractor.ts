@@ -20,7 +20,10 @@ export interface TrendResult {
 }
 
 const DEFAULT_STOPWORDS = new Set<string>([
-  'the','and','a','an','of','to','in','is','it','for','on','with','as','at','by','from','or','be','are','was','were','that','this','these','those','but','if','not','can','could','should','would','will','just','about','into','than','then','so','very','over','under','between','because','while','during','where','when','who','whom','which','what','why','how','also','we','you','they','he','she','i','me','my','our','your','their','them','us'
+  // Articles / conjunctions / prepositions / pronouns
+  'the','and','a','an','of','to','in','is','it','for','on','with','as','at','by','from','or','be','are','was','were','that','this','these','those','but','if','not','can','could','should','would','will','just','about','into','than','then','so','very','over','under','between','because','while','during','where','when','who','whom','which','what','why','how','also','we','you','they','he','she','i','me','my','our','your','their','them','us','there','here','out','up','down','off','again','once','only','both','each','few','more','most','other','some','such','no','nor','too','own','same','so','too','than','ever','never','always','sometimes','often','across','after','before','around','through','without','within','toward','towards','until','since','among','amongst','per','via','vs',
+  // Common markdown / vault noise
+  'http','https','www','com','md','jpg','png','gif','pdf','amp','nbsp'
 ]);
 
 /**
@@ -36,7 +39,7 @@ function tokenize(input: string): string[] {
 }
 
 function simpleStem(token: string): string {
-  // Do not stem short words or hashtags
+  // Do not stem hashtags; keep short tokens unmodified
   if (token.startsWith('#') || token.length <= 3) return token;
   // Basic suffix stripping
   const patterns: RegExp[] = [/(ing|ed|ly|ness|ment|ers|er|s)$/];
@@ -116,9 +119,11 @@ export class TrendExtractor {
         if (!preserve && DEFAULT_STOPWORDS.has(token)) continue;
         // Skip numeric-only tokens
         if (!preserve && /^\d+$/.test(token)) continue;
+        // Skip tokens shorter than 3 chars unless hashtag or preserved entity
+        if (!preserve && !token.startsWith('#') && token.length < 3) continue;
 
         const normalized = preserve ? token : simpleStem(token);
-        if (!normalized || normalized.length < 2) continue;
+        if (!normalized || (!preserve && !normalized.startsWith('#') && normalized.length < 3)) continue;
 
         const curr = termToMentions.get(normalized) || 0;
         termToMentions.set(normalized, curr + weight);

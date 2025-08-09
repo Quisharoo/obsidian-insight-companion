@@ -16,6 +16,10 @@
     "lib": [
       "DOM",
       "ES6"
+    ],
+    "types": [
+      "jest",
+      "node"
     ]
   },
   "include": [

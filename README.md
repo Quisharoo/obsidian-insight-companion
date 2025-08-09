@@ -10,6 +10,7 @@ Automatically generate insightful summaries from collections of your vault notes
 - **Date Range Caching**: Remembers your last used date range
 - **OpenAI Integration**: Generate summaries using GPT models with token estimation and cost preview
 - **Dual Summary Modes**: Choose between date-based or folder-based note filtering
+- **Trends (beta)**: Enable in Settings → Insight Companion → Trends (beta), or toggle per run in the Summarise Notes dialog.
 
 ## Development Setup
 

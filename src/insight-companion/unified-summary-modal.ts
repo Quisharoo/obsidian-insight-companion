@@ -29,6 +29,7 @@ export class UnifiedSummaryModal extends Modal {
 	private filterSummaryEl: HTMLElement;
 	private showApiKeyError: boolean = false;
 	private onOpenSettings?: () => void;
+    private defaultIncludeTrends: boolean = false;
 
 	constructor(
 		app: App, 
@@ -37,9 +38,10 @@ export class UnifiedSummaryModal extends Modal {
 		defaultInsightStyle?: 'structured' | 'freeform' | 'succinct',
 		defaultDateSource?: 'created' | 'modified',
 		defaultExcludedMetadata?: string[],
-		onSubmit?: (result: UnifiedSummaryResult) => void,
-		showApiKeyError?: boolean,
-		onOpenSettings?: () => void
+        onSubmit?: (result: UnifiedSummaryResult) => void,
+        showApiKeyError?: boolean,
+        onOpenSettings?: () => void,
+        defaultIncludeTrends?: boolean
 	) {
 		super(app);
 		
@@ -57,6 +59,7 @@ export class UnifiedSummaryModal extends Modal {
 		this.onSubmit = onSubmit || (() => {});
 		this.showApiKeyError = !!showApiKeyError;
 		this.onOpenSettings = onOpenSettings;
+        this.defaultIncludeTrends = !!defaultIncludeTrends;
 	}
 
 	onOpen() {
@@ -118,16 +121,42 @@ export class UnifiedSummaryModal extends Modal {
 		this.updateFilterSummary();
 	}
 
-	private createTrendsToggle(container: HTMLElement) {
-		const setting = new Setting(container)
-			.setName('Include Trends (beta)')
-			.setDesc('Add a "Trends & Recurring Topics" section with top terms and counts.');
-		// Minimal checkbox compatible with tests (no real DOM in harness)
-		const checkbox = document.createElement('input');
-		checkbox.type = 'checkbox';
-		checkbox.checked = false;
-		this.includeTrendsToggle = checkbox as any;
-	}
+    private createTrendsToggle(container: HTMLElement) {
+        const setting = new Setting(container)
+            .setName('Include Trends (beta)')
+            .setDesc('Add a "Trends & Recurring Topics" section with top terms and counts.');
+
+        // Prefer real Obsidian toggle when available; fall back to a plain input for tests
+        const maybeAddToggle = (setting as any).addToggle as
+            | ((cb: (toggle: any) => void) => any)
+            | undefined;
+
+        if (typeof maybeAddToggle === 'function') {
+            maybeAddToggle.call(setting, (toggle: any) => {
+                // Obsidian ToggleComponent API typically has setValue/onChange
+                if (typeof toggle.setValue === 'function') toggle.setValue(this.defaultIncludeTrends);
+                if (typeof toggle.onChange === 'function') {
+                    toggle.onChange((value: boolean) => {
+                        if (this.includeTrendsToggle) this.includeTrendsToggle.checked = value;
+                    });
+                }
+                // Capture underlying input element when available
+                this.includeTrendsToggle = (toggle.inputEl as HTMLInputElement) || null;
+                // If inputEl is not exposed, synthesize one to mirror state for tests
+                if (!this.includeTrendsToggle) {
+                    const synthetic = document.createElement('input');
+                    synthetic.type = 'checkbox';
+                    synthetic.checked = this.defaultIncludeTrends;
+                    this.includeTrendsToggle = synthetic;
+                }
+            });
+        } else {
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = this.defaultIncludeTrends;
+            this.includeTrendsToggle = checkbox as any;
+        }
+    }
 
 	private addStyles() {
 		// Add inline styles for the modal to ensure proper styling
@@ -701,8 +730,8 @@ export class UnifiedSummaryModal extends Modal {
 		const result: UnifiedSummaryResult = {
 			insightStyle: this.insightStyle,
 			dateSource: this.dateSource,
-			excludedMetadata: this.excludedMetadata,
-			includeTrends: this.includeTrendsToggle ? this.includeTrendsToggle.checked : false
+            excludedMetadata: this.excludedMetadata,
+            includeTrends: this.includeTrendsToggle ? this.includeTrendsToggle.checked : this.defaultIncludeTrends
 		};
 
 		// Add date range if provided
