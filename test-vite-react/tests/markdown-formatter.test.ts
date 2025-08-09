@@ -5,7 +5,7 @@ describe('MarkdownFormatter', () => {
 	let mockSummaryResult: SummaryResult;
 
 	beforeEach(() => {
-		mockSummaryResult = {
+    mockSummaryResult = {
 			content: `# Key Themes
 
 ### Personal Development
@@ -48,7 +48,7 @@ describe('MarkdownFormatter', () => {
 			generationTime: 81600, // 81.6 seconds in milliseconds
 			model: 'gpt-4-0613'
 		}
-		};
+    } as any;
 	});
 
 	describe('formatSummary', () => {
@@ -130,6 +130,16 @@ describe('MarkdownFormatter', () => {
 			};
 			const result = MarkdownFormatter.formatSummary(mockSummaryResult, config);
 								expect(result).toContain('`2025-01-15` → `2025-01-20`');
+		});
+
+		it('should include Trends section when trends are present', () => {
+			(mockSummaryResult as any).metadata.trends = [
+				{ term: 'alpha', mentions: 5, notesCount: 3, firstSeen: '2025-01-10', lastSeen: '2025-01-15' }
+			];
+			const result = MarkdownFormatter.formatSummary(mockSummaryResult);
+			expect(result).toContain('## 📈 Trends & Recurring Topics');
+			expect(result).toContain('| term | mentions | notes | first seen | last seen |');
+			expect(result).toContain('alpha');
 		});
 	});
 

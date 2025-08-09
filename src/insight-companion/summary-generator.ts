@@ -3,6 +3,7 @@ import { DateRange } from './date-picker-modal';
 import { OpenAIService, OpenAIResponse, OpenAIError } from './openai-service';
 import { PromptGenerator, PromptConfig, GeneratedPrompt } from './prompt-generator';
 import { TokenEstimator } from './token-estimator';
+import { TrendExtractor, TrendOptions, TrendEntry } from './trend-extractor';
 
 export interface SummaryConfig {
 	chunkSize: number; // Maximum notes per chunk
@@ -10,6 +11,13 @@ export interface SummaryConfig {
 	retryAttempts: number;
 	retryDelayMs: number;
 	promptConfig?: Partial<PromptConfig>;
+    trendOptions?: {
+        include: boolean;
+        maxTerms: number;
+        minMentions: number;
+        entityHeuristics: boolean;
+        dateSource: 'created' | 'modified';
+    };
 }
 
 export interface SummaryProgress {
@@ -36,7 +44,11 @@ export interface SummaryResult {
 		};
 		chunksProcessed: number;
 		generationTime: number; // milliseconds
-		model: string;
+        model: string;
+        trends?: TrendEntry[];
+        trendDelta?: Array<{ term: string; deltaMentions: number }>;
+        prevSummaryDate?: string;
+        prevSummaryLink?: string;
 	};
 }
 
@@ -54,7 +66,14 @@ export class SummaryGenerator {
 		promptConfig: {
 			includeMetadata: true,
 			maxNotePreview: 500
-		}
+		},
+        trendOptions: {
+            include: false,
+            maxTerms: 10,
+            minMentions: 2,
+            entityHeuristics: true,
+            dateSource: 'created'
+        }
 	};
 
 	constructor(openaiService: OpenAIService, config: Partial<SummaryConfig> = {}) {
@@ -73,6 +92,21 @@ export class SummaryGenerator {
 		const { notes } = filterResult;
 
 		try {
+			// Compute trends if enabled; errors are swallowed to avoid blocking
+			let computedTrends: TrendEntry[] | undefined;
+			if (this.config.trendOptions && this.config.trendOptions.include) {
+				try {
+					const trendOpts: TrendOptions = {
+						maxTerms: this.config.trendOptions.maxTerms,
+						minMentions: this.config.trendOptions.minMentions,
+						entityHeuristics: this.config.trendOptions.entityHeuristics,
+						dateSource: (filterResult as any).dateSource || this.config.trendOptions.dateSource
+					};
+					computedTrends = TrendExtractor.extractTrends(notes, trendOpts).terms;
+				} catch (e) {
+					computedTrends = undefined;
+				}
+			}
 			// Determine if chunking is needed
 			const chunks = notes.length > 0 ? this.chunkNotes(notes) : [[]];
 			const totalChunks = chunks.length;
@@ -164,7 +198,7 @@ export class SummaryGenerator {
 
 			const generationTime = Date.now() - startTime;
 
-			return {
+			const result: SummaryResult = {
 				content: finalSummary,
 				metadata: {
 					...(filterResult.mode === 'date' ? { dateRange: filterResult.dateRange } : {}),
@@ -180,6 +214,10 @@ export class SummaryGenerator {
 					model
 				}
 			};
+			if (computedTrends && computedTrends.length > 0) {
+				(result.metadata as any).trends = computedTrends;
+			}
+			return result;
 
         } catch (error) {
 			const openaiError = error as OpenAIError;

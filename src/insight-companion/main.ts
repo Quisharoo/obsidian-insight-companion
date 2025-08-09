@@ -14,6 +14,13 @@ interface InsightCompanionSettings {
 	outputFolder: string;
 	openaiApiKey: string;
 	lastExcludedMetadata: string[];
+	trends?: {
+		include: boolean;
+		maxTerms: number;
+		minMentions: number;
+		entityHeuristics: boolean;
+		deltaEnabled: boolean;
+	};
 	hasCompletedOnboarding?: boolean;
 }
 
@@ -22,6 +29,7 @@ const DEFAULT_SETTINGS: InsightCompanionSettings = {
 	outputFolder: 'Summaries',
 	openaiApiKey: '',
 	lastExcludedMetadata: ['summarise: false'],
+	trends: { include: false, maxTerms: 10, minMentions: 2, entityHeuristics: true, deltaEnabled: true },
 	hasCompletedOnboarding: false
 };
 
@@ -198,7 +206,14 @@ export default class InsightCompanionPlugin extends Plugin {
 
 		// Create a new SummaryGenerator with the specific insightStyle config
 		const summaryConfig = {
-			promptConfig: { insightStyle }
+			promptConfig: { insightStyle },
+			trendOptions: {
+				include: !!this.settings.trends?.include,
+				maxTerms: this.settings.trends?.maxTerms ?? 10,
+				minMentions: this.settings.trends?.minMentions ?? 2,
+				entityHeuristics: this.settings.trends?.entityHeuristics ?? true,
+				dateSource: filterResult.dateSource
+			}
 		};
 		const configuredSummaryGenerator = new SummaryGenerator(this.openaiService, summaryConfig);
 
@@ -395,6 +410,57 @@ class InsightCompanionSettingTab extends PluginSettingTab {
 					this.plugin.settings.outputFolder = value;
 					await this.plugin.saveSettings();
 				}));
+
+			// Trends settings
+			containerEl.createEl('h3', { text: 'Trends (beta)' });
+			new Setting(containerEl)
+				.setName('Include Trends')
+				.setDesc('Add a Trends & Recurring Topics section to summaries')
+				.addDropdown(dd => dd
+					.addOption('true', 'Enabled')
+					.addOption('false', 'Disabled')
+					.setValue(String(!!this.plugin.settings.trends?.include))
+					.onChange(async v => {
+						this.plugin.settings.trends = this.plugin.settings.trends || (DEFAULT_SETTINGS as any).trends;
+						this.plugin.settings.trends!.include = v === 'true';
+						await this.plugin.saveSettings();
+					}));
+			new Setting(containerEl)
+				.setName('Max Terms (Top N)')
+				.setDesc('How many top terms to include')
+				.addText(t => t
+					.setPlaceholder('10')
+					.setValue(String(this.plugin.settings.trends?.maxTerms ?? 10))
+					.onChange(async v => {
+						const n = parseInt(v, 10);
+						this.plugin.settings.trends = this.plugin.settings.trends || (DEFAULT_SETTINGS as any).trends;
+						this.plugin.settings.trends!.maxTerms = isNaN(n) ? 10 : n;
+						await this.plugin.saveSettings();
+					}));
+			new Setting(containerEl)
+				.setName('Noise Threshold (min mentions)')
+				.setDesc('Minimum mentions required for a term to be included')
+				.addText(t => t
+					.setPlaceholder('2')
+					.setValue(String(this.plugin.settings.trends?.minMentions ?? 2))
+					.onChange(async v => {
+						const n = parseInt(v, 10);
+						this.plugin.settings.trends = this.plugin.settings.trends || (DEFAULT_SETTINGS as any).trends;
+						this.plugin.settings.trends!.minMentions = isNaN(n) ? 2 : n;
+						await this.plugin.saveSettings();
+					}));
+			new Setting(containerEl)
+				.setName('Entity Heuristics')
+				.setDesc('Lightweight detection of People/Projects (front-matter People:, #project/*)')
+				.addDropdown(dd => dd
+					.addOption('true', 'Enabled')
+					.addOption('false', 'Disabled')
+					.setValue(String(this.plugin.settings.trends?.entityHeuristics ?? true))
+					.onChange(async v => {
+						this.plugin.settings.trends = this.plugin.settings.trends || (DEFAULT_SETTINGS as any).trends;
+						this.plugin.settings.trends!.entityHeuristics = v === 'true';
+						await this.plugin.saveSettings();
+					}));
 
 		// Display last used date range if available
 		if (this.plugin.settings.lastDateRange) {

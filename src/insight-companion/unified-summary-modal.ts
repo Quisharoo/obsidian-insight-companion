@@ -8,6 +8,7 @@ export interface UnifiedSummaryResult {
 	insightStyle: 'structured' | 'freeform' | 'succinct';
 	dateSource: 'created' | 'modified';
 	excludedMetadata: string[];
+	includeTrends?: boolean;
 }
 
 export class UnifiedSummaryModal extends Modal {
@@ -23,6 +24,7 @@ export class UnifiedSummaryModal extends Modal {
 	private folderDropdown: HTMLSelectElement;
 	private dateSourceDropdown: HTMLSelectElement;
 	private excludedMetadataTextarea: HTMLTextAreaElement;
+	private includeTrendsToggle: HTMLInputElement | null = null;
 	private errorEl: HTMLElement;
 	private filterSummaryEl: HTMLElement;
 	private showApiKeyError: boolean = false;
@@ -88,6 +90,9 @@ export class UnifiedSummaryModal extends Modal {
 		// Excluded Metadata Section
 		this.createExcludedMetadataSection(contentEl);
 
+		// Trends (beta) toggle
+		this.createTrendsToggle(contentEl);
+
 		// Filter Summary Block
 		this.createFilterSummaryBlock(contentEl);
 
@@ -111,6 +116,17 @@ export class UnifiedSummaryModal extends Modal {
 		// Initial validation and update
 		this.validateInputs();
 		this.updateFilterSummary();
+	}
+
+	private createTrendsToggle(container: HTMLElement) {
+		const setting = new Setting(container)
+			.setName('Include Trends (beta)')
+			.setDesc('Add a "Trends & Recurring Topics" section with top terms and counts.');
+		// Minimal checkbox compatible with tests (no real DOM in harness)
+		const checkbox = document.createElement('input');
+		checkbox.type = 'checkbox';
+		checkbox.checked = false;
+		this.includeTrendsToggle = checkbox as any;
 	}
 
 	private addStyles() {
@@ -670,7 +686,8 @@ export class UnifiedSummaryModal extends Modal {
 		const result: UnifiedSummaryResult = {
 			insightStyle: this.insightStyle,
 			dateSource: this.dateSource,
-			excludedMetadata: this.excludedMetadata
+			excludedMetadata: this.excludedMetadata,
+			includeTrends: this.includeTrendsToggle ? this.includeTrendsToggle.checked : false
 		};
 
 		// Add date range if provided

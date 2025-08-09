@@ -147,7 +147,7 @@ describe('UnifiedSummaryModal', () => {
 			
 			modal['handleSubmit']();
 			
-            expect(mockOnSubmit).toHaveBeenCalledWith({
+			expect(mockOnSubmit).toHaveBeenCalledWith({
 				dateRange: {
 					startDate: '2025-01-01',
 					endDate: '2025-01-31',
@@ -156,7 +156,8 @@ describe('UnifiedSummaryModal', () => {
 				},
 				insightStyle: 'structured',
 				dateSource: 'created',
-				excludedMetadata: ['summarise: false']
+				excludedMetadata: ['summarise: false'],
+				includeTrends: false
             });
         });
 
@@ -173,7 +174,8 @@ describe('UnifiedSummaryModal', () => {
 				folderName: 'folder1',
 				insightStyle: 'freeform',
 				dateSource: 'created',
-				excludedMetadata: ['summarise: false']
+				excludedMetadata: ['summarise: false'],
+				includeTrends: false
 			});
 		});
 
@@ -196,7 +198,8 @@ describe('UnifiedSummaryModal', () => {
 				folderName: 'folder1',
 				insightStyle: 'structured',
 				dateSource: 'created',
-				excludedMetadata: ['summarise: false']
+				excludedMetadata: ['summarise: false'],
+				includeTrends: false
 			});
 		});
 
@@ -211,7 +214,8 @@ describe('UnifiedSummaryModal', () => {
 			expect(mockOnSubmit).toHaveBeenCalledWith({
 				insightStyle: 'structured',
 				dateSource: 'created',
-				excludedMetadata: ['summarise: false']
+				excludedMetadata: ['summarise: false'],
+				includeTrends: false
 			});
 		});
 	});
